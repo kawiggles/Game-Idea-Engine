@@ -36,7 +36,7 @@ void printBoard(const Board &board) {
     for (int i = 0; i < board.height; i++) {
         std::cout << "[" << i << "]"; 
         for (int j = 0; j < board.width; j++) {
-            std::cout << getTileSymbol(board.tiles[tileIndex]);
+            std::cout << "\033[40m" << getTileSymbol(board.tiles[tileIndex]) << "\033[0m";
             tileIndex++;
         }
         std::cout << std::endl;
@@ -57,9 +57,9 @@ void printValidTilesBoard (Board &board, std::vector<Tile *> moves) {
         std::cout << "[" << i << "]"; 
         for (int j = 0; j < board.width; j++) {
             
-            if (moveSet.count(&board.tiles[tileIndex])) std::cout << "\x1b[4m";
+            (moveSet.count(&board.tiles[tileIndex])) ? std::cout << "\033[49m" : std::cout << "\033[40m";
             std::cout << getTileSymbol(board.tiles[tileIndex]);
-            if (moveSet.count(&board.tiles[tileIndex])) std::cout << "\x1b[0m";
+            std::cout << "\033[0m";
 
             tileIndex++;
         }

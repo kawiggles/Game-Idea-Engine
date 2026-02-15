@@ -87,10 +87,10 @@ int main() {
         std::cin.ignore();
 
         if (testGame.movePiece(selectedPiece, xin, yin)) {
-            std::cout << "\nMove Successful.\n";
+            std::cout << "\nMove Successful. Press enter to build new board.\n";
             std::cin.ignore();
         } else {
-            std::cout << "\nMove Failed.\n";
+            std::cout << "\nMove Failed. Press enter to try again.\n";
             std::cin.ignore();
         }
         

@@ -41,7 +41,7 @@ std::string getTileSymbol(const Tile &tile) {
         
         // Color enemy pieces red
         if (!tile.occupyingPiece->ownedByPlayer) {
-            pieceColor = "\033[31m";  // Red
+            pieceColor = "\033[30m";  // Red
         }
     }
     
@@ -55,7 +55,7 @@ std::string getTileSymbol(const Tile &tile) {
     }
     
     // Construct final symbol
-    return bracketColor + "[" + "\033[0m" + 
-           pieceColor + symbol + "\033[0m" + 
-           bracketColor + "]" + "\033[0m";
+    return bracketColor + "[" + "\033[39m" + 
+           pieceColor + symbol + "\033[39m" + 
+           bracketColor + "]" + "\033[39m";
 }
