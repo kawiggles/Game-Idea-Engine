@@ -7,6 +7,7 @@
 #include <iostream>
 #include <windows.h>
 #include <assert.h>
+#include <cstdlib>
 
 void enableANSI() {
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -18,6 +19,7 @@ void enableANSI() {
 
 int main() {
     enableANSI();
+    srand(time(NULL));
 
     std::cout << "Test Begin..." << std::endl;
 
