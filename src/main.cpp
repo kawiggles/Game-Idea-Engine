@@ -5,10 +5,10 @@
 #include "gameinstance.hpp"
 
 #include <iostream>
-#include <windows.h>
 #include <assert.h>
 #include <cstdlib>
 
+/*
 void enableANSI() {
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     DWORD dwMode = 0;
@@ -16,9 +16,10 @@ void enableANSI() {
     dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
     SetConsoleMode(hOut, dwMode);
 }
+*/
 
 int main() {
-    enableANSI();
+    // enableANSI();
     srand(time(NULL));
 
     std::cout << "Test Begin..." << std::endl;

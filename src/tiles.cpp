@@ -41,7 +41,7 @@ std::string getTileSymbol(const Tile &tile) {
         
         // Color enemy pieces red
         if (!tile.occupyingPiece->ownedByPlayer) {
-            pieceColor = "\033[30m";  // Red
+            pieceColor = "\033[31m";  // Red
         }
     }
     
