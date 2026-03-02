@@ -3,23 +3,45 @@
 
 #include <vector>
 
-// Forward Declarations
 #include "boards.hpp"
 #include "tiles.hpp"
 #include "pieces.hpp"
 
+typedef enum {
+    TEMPERATE,
+    GRASSY,
+    ARID,
+    TROPICAL,
+    ALPINE,
+    ARCTIC
+} BiomeType;
+
+typedef enum {
+
+} MissionType;
 // An instance of a game. Basically contains everything needed to run the core mechanics of the game
 class GameInstance {
     public:
+        // Constructor
+        GameInstance(BiomeType biome, MissionType mission, int octave);
 
-        // Members of GameInstance
+        // Public Members of GameInstance
         bool playerWin;
+        BiomeType biome;
+        MissionType mission;
+        int octave;
+        int boardWidth;
+        int boardHeight;
+
+    private:
+        // Private Members of GameInstance
         Board board;
         std::vector<Piece> playerPieces;
         std::vector<Piece> enemyPieces;
+        unsigned int seed;
 
-        // Constructor for GameInstance
-        GameInstance(std::vector<Piece> runPieces, std::vector<Piece> enemyPieces, int boardX, int boardY);
+        // When a GameInstance is selected, makeGame actually generates the board
+        void makeGame(std::vector<Piece> runPieces, std::vector<Piece> enemyPieces);
 
         // Two methods to get tiles, one from an (x,y) coordinate, and another from a piece object.
         Tile * getTile(int x, int y);

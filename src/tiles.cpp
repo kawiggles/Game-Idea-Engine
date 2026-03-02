@@ -1,5 +1,6 @@
 #include "tiles.hpp"
 #include "pieces.hpp"
+#include "PerlinNoise.hpp"
 
 #include <cstdlib>
 #include <iostream>

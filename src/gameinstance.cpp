@@ -2,13 +2,31 @@
 #include "boards.hpp"
 #include "pieces.hpp"
 #include "tiles.hpp"
+
 #include <iostream>
 #include <vector>
+#include <random>
 
 // Game Instance constructor, used to initialize a game instance
-// A game instance is a board struct
-GameInstance::GameInstance(std::vector<Piece> runPieces, std::vector<Piece> enemyPieces, int boardX, int boardY) {
-    board = makeBoard(boardX, boardY);
+GameInstance::GameInstance(BiomeType biome, MissionType mission, int octave) {
+    this->biome = biome;
+    this->mission = mission;
+    this->octave = octave;
+
+    // Seed for Perlin Noise and random board width and height
+    std::random_device rd;
+    seed = rd();
+
+    // Random width and height
+    std::mt19937 gen(seed);
+    std::uniform_int_distribution<int> dis(5, 20);
+    boardHeight = dis(gen);
+    boardWidth = dis(gen);
+}
+
+// This function actually initalizes the game instance, taking values from the constructor to generate a board
+void GameInstance::makeGame(std::vector<Piece> runPieces, std::vector<Piece> enemyPieces) {
+    board = makeBoard(GameInstance.boardWidth, GameInstance.boardHeight, GameInstance.seed, GameInstance.octave);
     this->playerPieces = runPieces; 
     this->enemyPieces = enemyPieces;
 }

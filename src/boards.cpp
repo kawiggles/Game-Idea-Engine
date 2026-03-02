@@ -1,4 +1,3 @@
-#include "pieces.hpp"
 #include "tiles.hpp"
 #include "boards.hpp"
 
@@ -6,7 +5,7 @@
 #include <vector>
 #include <unordered_set>
 
-Board makeBoard(int width, int height) {
+Board makeBoard(int width, int height, unsigned int seed, int octaves) {
     Board board {width, height, {}};
     board.tiles.reserve(width * height);
 
@@ -42,7 +41,7 @@ void printBoard(const Board &board) {
 
 /* This function essentially does the exact same thing, but also adds highlights for valid moves for a selected piece. It takes a vector of those valid moves as an additional input. */
 void printValidTilesBoard(Board &board, std::vector<Tile *> moves) {
-    std::unordered_set<Tile *> moveSet(moves.begin(), moves.end());
+    std::unordered_set<Tile *> moveSet(moves.begin(), moves.end()); // This needs to be an unordered set because of the variable size of possible valid moves
     
     int tileIndex = 0;
     std::cout << "   ";
@@ -55,7 +54,7 @@ void printValidTilesBoard(Board &board, std::vector<Tile *> moves) {
         std::cout << "[" << i << "]"; 
         for (int j = 0; j < board.width; j++) {
             
-            (moveSet.count(&board.tiles[tileIndex])) ? std::cout << "\033[47m" : std::cout << "\033[49m";
+            (moveSet.count(&board.tiles[tileIndex])) ? std::cout << "\033[47m" : std::cout << "\033[49m"; // If the current tile is in the set of possible moves, 47m background, else 49m background
             std::cout << getTileSymbol(board.tiles[tileIndex]);
             std::cout << "\033[0m";
 

@@ -2,8 +2,6 @@
 #define BOARDS_HPP
 
 #include <vector>
-#include <cstdlib>
-#include <iostream>
 
 // Forward declarations
 struct Tile; 
@@ -18,7 +16,8 @@ struct Board {
 // Fuctions here:
 
 // Function that generates a board of dimensions (width, height) by creating a tile for each increment of x and y
-Board makeBoard(int width, int height);
+Board makeBoard(int width, int height, unsigned int seed, int octaves);
+// Later on, additional parameters will be added for biome and mission, both of which will be enums
 
 // Function to find tiles on a board using it's (x, y) coordinates, very useful
 Tile * getTile(Board &board, int xCoord, int yCoord);
