@@ -9,8 +9,15 @@
 enum class TerrainType {
     Field,
     Forest,
-    Swamp,
-    Mountain
+    Water,
+    Mountain,
+    Road,
+    Desert,
+    Jungle,
+    Peak,
+    IceField,
+    SnowField,
+    Tundra
 };
 
 struct Piece; // Forward declaration of Piece struct, which is in pieces.hpp

@@ -3,7 +3,6 @@
 #include "PerlinNoise.hpp"
 
 #include <cstdlib>
-#include <iostream>
 #include <string>
 
 TerrainType getRandomTerrain() {
@@ -14,7 +13,7 @@ TerrainType getRandomTerrain() {
         case 4: case 5: 
             return TerrainType::Forest;
         case 6: case 7: 
-            return TerrainType::Swamp;
+            return TerrainType::Water;
         case 8: case 9:  
             return TerrainType::Mountain;
         default: 
@@ -24,7 +23,7 @@ TerrainType getRandomTerrain() {
 
 std::string getTileSymbol(const Tile &tile) {
     std::string symbol = " ";  // Default: empty space
-    std::string pieceColor = "";
+    std::string pieceColor = ""; //Default: no color
     
     if (tile.occupyingPiece) {
         // Determine piece letter
@@ -50,7 +49,7 @@ std::string getTileSymbol(const Tile &tile) {
     std::string bracketColor;
     switch (tile.terrain) {
         case TerrainType::Field:    bracketColor = "\033[33m"; break;  // Yellow
-        case TerrainType::Swamp:    bracketColor = "\033[90m"; break;  // Dark gray
+        case TerrainType::Water:    bracketColor = "\033[90m"; break;  // Dark gray
         case TerrainType::Forest:   bracketColor = "\033[32m"; break;  // Green
         case TerrainType::Mountain: bracketColor = "\033[37m"; break;  // White
     }

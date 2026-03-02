@@ -6,19 +6,8 @@
 #include "boards.hpp"
 #include "tiles.hpp"
 #include "pieces.hpp"
+#include "instancetypes.hpp"
 
-typedef enum {
-    TEMPERATE,
-    GRASSY,
-    ARID,
-    TROPICAL,
-    ALPINE,
-    ARCTIC
-} BiomeType;
-
-typedef enum {
-
-} MissionType;
 // An instance of a game. Basically contains everything needed to run the core mechanics of the game
 class GameInstance {
     public:
@@ -33,8 +22,7 @@ class GameInstance {
         int boardWidth;
         int boardHeight;
 
-    private:
-        // Private Members of GameInstance
+    // Private Members of GameInstance, make private later
         Board board;
         std::vector<Piece> playerPieces;
         std::vector<Piece> enemyPieces;

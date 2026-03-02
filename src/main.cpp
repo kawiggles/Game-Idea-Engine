@@ -37,22 +37,15 @@ int main() {
     };
 
     // Make a new game instance
-    GameInstance testGame(testPlayerPieces, testEnemyPieces, 8, 8);
 
     // Add player pieces
-    testGame.addPiece(&testGame.playerPieces[0], 1, 6);
-    testGame.addPiece(&testGame.playerPieces[1], 3, 6);
-    testGame.addPiece(&testGame.playerPieces[2], 5, 6);
 
     // Add enemy pieces 
-    testGame.addPiece(&testGame.enemyPieces[0], 6, 1);
-    testGame.addPiece(&testGame.enemyPieces[1], 4, 1);
 
     // Moving pieces and reprinting board:
     bool endProgram = false;
     while (!endProgram) {
         std::system("cls");
-        printBoard(testGame.board);
 
         char input;
         std::cout << "Select a piece to move (q to quit): ";
@@ -67,20 +60,20 @@ int main() {
         Piece * selectedPiece = nullptr;
 
         switch (input) {
-            case ('P'): case ('p'): selectedPiece = &testGame.playerPieces[0]; break;
-            case ('L'): case ('l'): selectedPiece = &testGame.playerPieces[1]; break;
-            case ('H'): case ('h'): selectedPiece = &testGame.playerPieces[2]; break;
-            case ('A'): case ('a'): selectedPiece = &testGame.enemyPieces[0]; break;
-            case ('W'): case ('w'): selectedPiece = &testGame.enemyPieces[1]; break;
+//            case ('P'): case ('p'): selectedPiece = &testGame.playerPieces[0]; break;
+//            case ('L'): case ('l'): selectedPiece = &testGame.playerPieces[1]; break;
+//            case ('H'): case ('h'): selectedPiece = &testGame.playerPieces[2]; break;
+//            case ('A'): case ('a'): selectedPiece = &testGame.enemyPieces[0]; break;
+//            case ('W'): case ('w'): selectedPiece = &testGame.enemyPieces[1]; break;
             default:
                 std::cout << "Piece identifier not recognized. Enter to continue.";
                 std::cin.ignore();
                 continue;
         }
 
-        std::vector <Tile *> validMoves = testGame.getValidMoves(selectedPiece);
+//        std::vector <Tile *> validMoves = testGame.getValidMoves(selectedPiece);
         
-        printValidTilesBoard(testGame.board, validMoves);
+//        printValidTilesBoard(testGame.board, validMoves);
 
         int xin, yin;
         std::cout << "\nEnter new x coordinate:";
@@ -88,7 +81,7 @@ int main() {
         std::cout << "Enter new y coordinate:";
         std::cin >> yin;
         std::cin.ignore();
-
+/*
         if (testGame.movePiece(selectedPiece, xin, yin)) {
             std::cout << "\nMove Successful. Press enter to build new board.\n";
             std::cin.ignore();
@@ -96,7 +89,7 @@ int main() {
             std::cout << "\nMove Failed. Press enter to try again.\n";
             std::cin.ignore();
         }
-        
+*/        
     }
 
     return 0;

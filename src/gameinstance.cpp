@@ -2,6 +2,7 @@
 #include "boards.hpp"
 #include "pieces.hpp"
 #include "tiles.hpp"
+#include "instancetypes.hpp"
 
 #include <iostream>
 #include <vector>
@@ -26,7 +27,7 @@ GameInstance::GameInstance(BiomeType biome, MissionType mission, int octave) {
 
 // This function actually initalizes the game instance, taking values from the constructor to generate a board
 void GameInstance::makeGame(std::vector<Piece> runPieces, std::vector<Piece> enemyPieces) {
-    board = makeBoard(GameInstance.boardWidth, GameInstance.boardHeight, GameInstance.seed, GameInstance.octave);
+    board = makeBoard(GameInstance::boardWidth, GameInstance::boardHeight, GameInstance::seed, GameInstance::octave, GameInstance::biome, GameInstance::mission);
     this->playerPieces = runPieces; 
     this->enemyPieces = enemyPieces;
 }

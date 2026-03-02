@@ -1,11 +1,12 @@
 #include "tiles.hpp"
 #include "boards.hpp"
+#include "instancetypes.hpp"
 
 #include <iostream>
 #include <vector>
 #include <unordered_set>
 
-Board makeBoard(int width, int height, unsigned int seed, int octaves) {
+Board makeBoard(int width, int height, unsigned int seed, int octaves, BiomeType biome, MissionType mission) {
     Board board {width, height, {}};
     board.tiles.reserve(width * height);
 
