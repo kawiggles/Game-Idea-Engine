@@ -1,6 +1,7 @@
 #include "tiles.hpp"
 #include "boards.hpp"
-#include "instancetypes.hpp"
+#include "types.hpp"
+#include "PerlinNoise.hpp"
 
 #include <iostream>
 #include <vector>
@@ -8,13 +9,20 @@
 
 Board makeBoard(int width, int height, unsigned int seed, int octaves, BiomeType biome, MissionType mission) {
     Board board {width, height, {}};
-    board.tiles.reserve(width * height);
+    board.tiles.reserve(width * height); // Allocate memory space for vector equal to area of board
+    
+    const siv::PerlinNoise noiseMap{ seed }; // Generate perlin noise map from seed
 
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            board.tiles.push_back({x, y, getRandomTerrain(), nullptr});
+            // (x, y) coordinates are normalized in order to account for perlin noise frequency
+            float nx = (float)x / width;
+            float ny = (float)y / height;
+            float noiseValue = noiseMap.octave2D_01((nx * 4.0f), (ny * 4.0f), octaves); // Get noise value depending on normalized (x, y) and octave 
+
+            board.tiles.push_back({x, y, getRandomTerrain(noiseValue, biome), nullptr});
             // (x, y), terrain type, and null pointer representing no occupying piece
-        } 
+        }
     }
 
     return board;

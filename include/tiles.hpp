@@ -20,7 +20,7 @@ struct Tile {
 // Functions:
 
 // Function to randomly generate a terrain type for a tile, will be updated later for perlin noise
-TerrainType getRandomTerrain();
+TerrainType getRandomTerrain(float noise, BiomeType biome);
 
 // Function to get a terminal symbol for a tile object
 std::string getTileSymbol(const Tile &tile);
