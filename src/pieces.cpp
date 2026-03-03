@@ -44,21 +44,21 @@ Piece makeNewPiece(std::string name, PieceMaterial material, PieceType type, boo
             newPiece.strength = 1;
             newPiece.toughness = 1;
             newPiece.maxCardinal = 1;
-            newPiece.maxDiagonal = 100;
+            newPiece.maxDiagonal = 5;
             newPiece.rangedAttackDistance = 2;
             break;
         case PieceType::MCavalry:
             newPiece.category = PieceCategory::Cavalry;
             newPiece.strength = 2;
             newPiece.toughness = 1;
-            newPiece.maxCardinal = 100; // Effectively Infinite
-            newPiece.maxDiagonal = 100;
+            newPiece.maxCardinal = 5; // Effectively Infinite
+            newPiece.maxDiagonal = 5;
             break;
         case PieceType::HCavalry:
             newPiece.category = PieceCategory::Cavalry;
             newPiece.strength = 3;
             newPiece.toughness = 2;
-            newPiece.maxCardinal = 100; 
+            newPiece.maxCardinal = 5; 
             newPiece.maxDiagonal = 0;
             break;
         case PieceType::Commander:
