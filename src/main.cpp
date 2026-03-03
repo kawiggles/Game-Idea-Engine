@@ -25,7 +25,7 @@ int main() {
     };
 
     // Make a new game instance
-    GameInstance testGame(BiomeType::Arctic, MissionType::FillerMission, 1);
+    GameInstance testGame(BiomeType::Tropical, MissionType::FillerMission, 1);
     testGame.makeGame(testPlayerPieces, testEnemyPieces);
     std::cout << "Board tile count: " << testGame.board.tiles.size() << std::endl;
     printBoard(testGame.board);

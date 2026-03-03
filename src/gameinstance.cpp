@@ -82,7 +82,7 @@ bool GameInstance::addPiece(Piece * piece, int x, int y) {
     return true;
 }
 
-/* Quick function to get the tile a piece is on, as pieces don't belong to tiles. */
+// Quick function to get the tile a piece is on, as pieces don't belong to tiles.
 Tile * GameInstance::getPieceTile(Piece * piece) {
     for (Tile &t : board.tiles) {
         if (t.occupyingPiece == piece) {
@@ -92,8 +92,7 @@ Tile * GameInstance::getPieceTile(Piece * piece) {
     return nullptr;
 }
 
-/* This function creates an array of valid move targets for a passed piece object
-   It's going to be a particularly complicated piece of code, so prepare for a lot of comments */
+// This function creates an array of valid move targets for a passed piece object It's going to be a particularly complicated piece of code, so prepare for a lot of comments
 std::vector<Tile *> GameInstance::getValidMoves(Piece * piece) {
     Tile * currentTile = getPieceTile(piece);    
 
@@ -111,7 +110,7 @@ std::vector<Tile *> GameInstance::getValidMoves(Piece * piece) {
     }
 */
 
-/* We're doing linear algebra, we need an array of arrays. This is some C shit, baby! */
+// We're doing linear algebra, we need an array of arrays. This is some C shit, baby! 
     int vectors[8][2] = {
         { 1, 0}, // Right
         {-1, 0}, // Left
@@ -123,12 +122,11 @@ std::vector<Tile *> GameInstance::getValidMoves(Piece * piece) {
         {-1,-1}  // Left and Down
     };
 
-/* We know there's only 8 vectors to loop through, so we can set the number of iterations manually. */
+// We know there's only 8 vectors to loop through, so we can set the number of iterations manually 
     for (int i = 0; i < 8; i++) { // i iterates through vectors
 
-        for (int j = 1; (i < 4) ? j <= cardinalMax : j <= diagonalMax; j++) { /* j iterates through tiles on that vector.
-        The ternary operator in the middle of this loop determines if the number of tiles iterated through is limited 
-        by the cardinalMax or diagonalMax value, corresponding with the array of vectors. */
+        for (int j = 1; (i < 4) ? j <= cardinalMax : j <= diagonalMax; j++) { 
+        // j iterates through tiles on that vector. The ternary operator in the middle of this loop determines if the number of tiles iterated through is limited by the cardinalMax or diagonalMax value, corresponding with the array of vectors. 
 
             Tile * checkTile = getTile(currentTile->x + (vectors[i][0]*j), currentTile->y + (vectors[i][1]*j)); // The tile being checked. Because linear algebra, works in all directions
 
@@ -160,8 +158,7 @@ std::vector<Tile *> GameInstance::getValidMoves(Piece * piece) {
 
 }
 
-/* Function to move a piece from one tile to another, provided the checks of getValidMoves and pieceExists are passed.
-Also allows for the "capture" of pieces */
+// Function to move a piece from one tile to another, provided the checks of getValidMoves and pieceExists are passed. Also allows for the "capture" of pieces 
 bool GameInstance::movePiece(Piece * piece, int x, int y) {
     if (x < 0 || y < 0 || x >= board.width || y >= board.height) {
         std::cout << "Fail, coordinates out of bounds. Error in movePiece." << std::endl;
