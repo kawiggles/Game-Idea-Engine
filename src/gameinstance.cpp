@@ -23,8 +23,6 @@ GameInstance::GameInstance(BiomeType biome, MissionType mission, int octave) {
     std::uniform_int_distribution<int> dis(8, 20);
     boardHeight = dis(gen);
     boardWidth = dis(gen);
-    std::cout << "Board height: " << boardHeight << std::endl;
-    std::cout << "Board width: " << boardWidth << std::endl;
 }
 
 // This function actually initalizes the game instance, taking values from the constructor to generate a board
@@ -101,7 +99,7 @@ std::vector<Tile *> GameInstance::getValidMoves(Piece * piece) {
     int relativeStrength = piece->strength; // These will be modified by runes and terrain, but are the base value for now
 
     std::vector<Tile *> validTiles; // validTiles is the vector we'll return
-    validTiles.reserve((cardinalMax * 4) + (diagonalMax * 4)); // I could write a ton of logic to get this to work with the inifinite movement pieces, but fuck that shit, it can be massive in th0se instances
+    validTiles.reserve((cardinalMax * 4) + (diagonalMax * 4)); // I could write a ton of logic to get this to work with the inifinite movement pieces, but fuck that shit, it can be massive in those instances
 
 /*  // Test code, loop to return the enire board as valid tiles
     validTiles.reserve(board.tiles.size());
@@ -124,14 +122,69 @@ std::vector<Tile *> GameInstance::getValidMoves(Piece * piece) {
 
 // We know there's only 8 vectors to loop through, so we can set the number of iterations manually 
     for (int i = 0; i < 8; i++) { // i iterates through vectors
-
-        for (int j = 1; (i < 4) ? j <= cardinalMax : j <= diagonalMax; j++) { 
-        // j iterates through tiles on that vector. The ternary operator in the middle of this loop determines if the number of tiles iterated through is limited by the cardinalMax or diagonalMax value, corresponding with the array of vectors. 
+            bool stopMove = false;
+            int cardinalEval = cardinalMax;
+            int diagonalEval = diagonalMax;
+        for (int j = 1; (i < 4) ? j <= cardinalEval : j <= diagonalEval; j++) { 
+        // j iterates through tiles on that vector. The ternary operator in the middle of this loop determines if the number of tiles iterated through is limited by the cardinalEval or diagonalEval value, corresponding with the array of vectors. 
 
             Tile * checkTile = getTile(currentTile->x + (vectors[i][0]*j), currentTile->y + (vectors[i][1]*j)); // The tile being checked. Because linear algebra, works in all directions
 
             if (!checkTile) break; // Breaks loop if tile doesn't exist
             
+            // Terrain Logic Here
+            int relativeToughnessMod = 0;
+            int relativeStrengthMod = 0;
+
+            switch (checkTile->terrain) {
+                case TerrainType::Field:
+                    break;
+                case TerrainType::Forest:
+                    if (!(piece->type == PieceType::Light  || 
+                          piece->type == PieceType::Archer ||
+                          piece->type == PieceType::LCavalry)) (i < 4) ? cardinalEval-- : diagonalEval--; // Decrease movement by one
+                    relativeStrengthMod++;
+                    break;
+                case TerrainType::Water:
+                    stopMove = true;
+                    break;
+                case TerrainType::Mountain:
+                    if (piece->category == PieceCategory::Cavalry) {
+                        stopMove = true;
+                        break;
+                    } else {
+                        relativeToughnessMod++;
+                        (i < 4) ? cardinalEval-- : diagonalEval--;
+                        break;
+                    }
+                case TerrainType::Road:
+                    if (getTile(checkTile->x + vectors[i][0], checkTile->y + vectors[i][1])->terrain == TerrainType::Road) (i < 4) ? cardinalEval++ : diagonalEval++; // Beautiful
+                    break;
+                case TerrainType::Desert:
+                    relativeStrengthMod--;
+                    (i < 4) ? cardinalEval-- : diagonalEval--;
+                    break;
+                case TerrainType::Jungle:
+                    if (!(piece->type == PieceType::Light)) (i < 4) ? cardinalEval-- : diagonalEval--;
+                    if (piece->category == PieceCategory::Cavalry) (i < 4) ? cardinalEval-- : diagonalEval--;
+                    relativeToughnessMod++;
+                    break;
+                case TerrainType::Peak:
+                    stopMove = true;
+                    break;
+                // Arctic rules are simple here because effects will be determined later on if these tiles are selected.
+                case TerrainType::IceField:
+                    break;
+                case TerrainType::SnowField:
+                    (i < 4) ? cardinalEval-- : diagonalEval--;
+                    break;
+                case TerrainType::Tundra:
+                    break;
+            }
+
+            if ((i < 4) ? j > cardinalEval : j > diagonalEval) break; // If terrain rules caused j to exceed the move limit, break 
+            if (stopMove == true) break; //If any terrain rules trigger this, break the loop
+
             if (checkTile->occupyingPiece) { // Now logic for if the tile is occupied
                 if (checkTile->occupyingPiece->ownedByPlayer == piece->ownedByPlayer) { // If it's friendly, check if we can move through it.
                     if (piece->canMoveThroughPieces) {
@@ -140,9 +193,9 @@ std::vector<Tile *> GameInstance::getValidMoves(Piece * piece) {
                         break;
                     }
                 } else { // If it's not, we do a strength/toughness comparison
-                    int relativeToughness = checkTile->occupyingPiece->toughness; // Like strength, will be altered by terrain and runes later
+                    int relativeToughness = checkTile->occupyingPiece->toughness + relativeToughnessMod; // Like strength, will be altered by terrain and runes later
 
-                    if (relativeStrength >= relativeToughness) {
+                    if (relativeStrength + relativeStrengthMod >= relativeToughness) {
                         validTiles.push_back(checkTile);
                         break;
                     }

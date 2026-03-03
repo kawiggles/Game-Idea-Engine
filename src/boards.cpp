@@ -35,18 +35,18 @@ void printBoard(const Board &board) {
     int tileIndex = 0;
     std::cout << "    "; // Empty space at the start of coordinate numbering
     for (int i = 0; i < board.width; i++) { // Column numbering
-        if (i < 10) {
-            std::cout << "[0" << i << "]";
+        if (i < 9) {
+            std::cout << "[ " << i+1 << "]";
         } else {
-            std::cout << "[" << i << "]";
+            std::cout << "[" << i+1 << "]";
         }
     }
     std::cout << std::endl;
     for (int i = 0; i < board.height; i++) {
-        if (i < 10) {
-            std::cout << "[0" << i << "]"; // Row numbering
+        if (i < 9) {
+            std::cout << "[ " << i+1 << "]"; // Row numbering
         } else {
-            std::cout << "[" << i << "]";
+            std::cout << "[" << i+1 << "]";
         }
 
         for (int j = 0; j < board.width; j++) {
@@ -62,14 +62,22 @@ void printValidTilesBoard(Board &board, std::vector<Tile *> moves) {
     std::unordered_set<Tile *> moveSet(moves.begin(), moves.end()); // This needs to be an unordered set because of the variable size of possible valid moves
     
     int tileIndex = 0;
-    std::cout << "   ";
-    for (int i = 0; i < board.width; i++) {
-        std::cout << "[" << i << "]";
+    std::cout << "    ";
+    for (int i = 0; i < board.width; i++) { // Column numbering
+        if (i < 9) {
+            std::cout << "[ " << i+1 << "]";
+        } else {
+            std::cout << "[" << i+1 << "]";
+        }
     }
     std::cout << std::endl;
-
     for (int i = 0; i < board.height; i++) {
-        std::cout << "[" << i << "]"; 
+        if (i < 9) {
+            std::cout << "[ " << i+1 << "]"; // Row numbering
+        } else {
+            std::cout << "[" << i+1 << "]";
+        }
+
         for (int j = 0; j < board.width; j++) {
             
             (moveSet.count(&board.tiles[tileIndex])) ? std::cout << "\033[47m" : std::cout << "\033[49m"; // If the current tile is in the set of possible moves, 47m background, else 49m background

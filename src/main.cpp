@@ -25,21 +25,25 @@ int main() {
     };
 
     // Make a new game instance
-    GameInstance testGame(BiomeType::Tropical, MissionType::FillerMission, 1);
+    GameInstance testGame(BiomeType::Temperate, MissionType::FillerMission, 1);
     testGame.makeGame(testPlayerPieces, testEnemyPieces);
     std::cout << "Board tile count: " << testGame.board.tiles.size() << std::endl;
-    printBoard(testGame.board);
 
     // Add player pieces
-
+    testGame.addPiece(&testGame.playerPieces[0], testGame.boardWidth-1, testGame.boardHeight-1);
+    testGame.addPiece(&testGame.playerPieces[1], testGame.boardWidth-2, testGame.boardHeight-1);
+    testGame.addPiece(&testGame.playerPieces[2], testGame.boardWidth-3, testGame.boardHeight-1);
     // Add enemy pieces 
+    testGame.addPiece(&testGame.enemyPieces[0], 0, 0);
+    testGame.addPiece(&testGame.enemyPieces[1], 1, 0);
 
-/* Commenting this out for now because it is for testing of a different kind
+// Commenting this out for now because it is for testing of a different kind
  
     // Moving pieces and reprinting board:
     bool endProgram = false;
     while (!endProgram) {
-        std::system("cls");
+        std::system("clear");
+        printBoard(testGame.board);
 
         char input;
         std::cout << "Select a piece to move (q to quit): ";
@@ -54,20 +58,19 @@ int main() {
         Piece * selectedPiece = nullptr;
 
         switch (input) {
-//            case ('P'): case ('p'): selectedPiece = &testGame.playerPieces[0]; break;
-//            case ('L'): case ('l'): selectedPiece = &testGame.playerPieces[1]; break;
-//            case ('H'): case ('h'): selectedPiece = &testGame.playerPieces[2]; break;
-//            case ('A'): case ('a'): selectedPiece = &testGame.enemyPieces[0]; break;
-//            case ('W'): case ('w'): selectedPiece = &testGame.enemyPieces[1]; break;
+            case ('P'): case ('p'): selectedPiece = &testGame.playerPieces[0]; break;
+            case ('L'): case ('l'): selectedPiece = &testGame.playerPieces[1]; break;
+            case ('H'): case ('h'): selectedPiece = &testGame.playerPieces[2]; break;
+            case ('A'): case ('a'): selectedPiece = &testGame.enemyPieces[0]; break;
+            case ('W'): case ('w'): selectedPiece = &testGame.enemyPieces[1]; break;
             default:
                 std::cout << "Piece identifier not recognized. Enter to continue.";
-                std::cin.ignore();
                 continue;
         }
 
-//        std::vector <Tile *> validMoves = testGame.getValidMoves(selectedPiece);
+        std::vector <Tile *> validMoves = testGame.getValidMoves(selectedPiece);
         
-//        printValidTilesBoard(testGame.board, validMoves);
+        printValidTilesBoard(testGame.board, validMoves);
 
         int xin, yin;
         std::cout << "\nEnter new x coordinate:";
@@ -76,7 +79,7 @@ int main() {
         std::cin >> yin;
         std::cin.ignore();
 
-        if (testGame.movePiece(selectedPiece, xin, yin)) {
+        if (testGame.movePiece(selectedPiece, xin-1, yin-1)) {
             std::cout << "\nMove Successful. Press enter to build new board.\n";
             std::cin.ignore();
         } else {
@@ -85,6 +88,6 @@ int main() {
         }
         
     }
-*/
+//
     return 0;
 }
