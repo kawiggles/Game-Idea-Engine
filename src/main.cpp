@@ -3,25 +3,13 @@
 #include "tiles.hpp"
 #include "boards.hpp"
 #include "gameinstance.hpp"
+#include "types.hpp"
 
 #include <iostream>
 #include <assert.h>
 #include <cstdlib>
 
-/*
-void enableANSI() {
-    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    DWORD dwMode = 0;
-    GetConsoleMode(hOut, &dwMode);
-    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-    SetConsoleMode(hOut, dwMode);
-}
-*/
-
 int main() {
-    // enableANSI();
-    srand(time(NULL));
-
     std::cout << "Test Begin..." << std::endl;
 
     // Create arrays of test of pieces
@@ -37,11 +25,17 @@ int main() {
     };
 
     // Make a new game instance
+    GameInstance testGame(BiomeType::Arctic, MissionType::FillerMission, 1);
+    testGame.makeGame(testPlayerPieces, testEnemyPieces);
+    std::cout << "Board tile count: " << testGame.board.tiles.size() << std::endl;
+    printBoard(testGame.board);
 
     // Add player pieces
 
     // Add enemy pieces 
 
+/* Commenting this out for now because it is for testing of a different kind
+ 
     // Moving pieces and reprinting board:
     bool endProgram = false;
     while (!endProgram) {
@@ -81,7 +75,7 @@ int main() {
         std::cout << "Enter new y coordinate:";
         std::cin >> yin;
         std::cin.ignore();
-/*
+
         if (testGame.movePiece(selectedPiece, xin, yin)) {
             std::cout << "\nMove Successful. Press enter to build new board.\n";
             std::cin.ignore();
@@ -89,8 +83,8 @@ int main() {
             std::cout << "\nMove Failed. Press enter to try again.\n";
             std::cin.ignore();
         }
-*/        
+        
     }
-
+*/
     return 0;
 }

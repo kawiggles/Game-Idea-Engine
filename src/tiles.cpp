@@ -7,32 +7,32 @@
 TerrainType getRandomTerrain(float noise, BiomeType biome) {
     switch (biome) {
         case BiomeType::Temperate:
-            if (noise < 0.2f) return TerrainType::Water;
+            if (noise < 0.3f) return TerrainType::Water;
             if (noise < 0.45f) return TerrainType::Field;
-            if (noise < 0.8f) return TerrainType::Forest;
+            if (noise < 0.7f) return TerrainType::Forest;
             return TerrainType::Mountain;
         case BiomeType::Grassy:
-            if (noise < 0.2f) return TerrainType::Water;
+            if (noise < 0.3f) return TerrainType::Water;
             if (noise < 0.55f) return TerrainType::Field;
-            if (noise < 0.8f) return TerrainType::Forest;
+            if (noise < 0.7f) return TerrainType::Forest;
             return TerrainType::Mountain;
         case BiomeType::Arid:
-            if (noise < 0.1f) return TerrainType::Water;
-            if (noise < 0.4f) return TerrainType::Field;
-            if (noise < 0.7f) return TerrainType::Desert;
-            if (noise < 0.8f) return TerrainType::Forest;
+            if (noise < 0.15f) return TerrainType::Water;
+            if (noise < 0.45f) return TerrainType::Field;
+            if (noise < 0.75f) return TerrainType::Desert;
+            if (noise < 0.9f) return TerrainType::Forest;
             return TerrainType::Mountain;
         case BiomeType::Tropical:
-            if (noise < 0.2f) return TerrainType::Water;
-            if (noise < 0.3f) return TerrainType::Field;
+            if (noise < 0.3f) return TerrainType::Water;
+            if (noise < 0.4f) return TerrainType::Field;
             if (noise < 0.55f) return TerrainType::Forest;
-            if (noise < 0.9f) return TerrainType::Jungle;
+            if (noise < 0.8f) return TerrainType::Jungle;
             return TerrainType::Mountain;
         case BiomeType::Alpine:
             if (noise < 0.1f) return TerrainType::Water;
             if (noise < 0.3f) return TerrainType::Field;
-            if (noise < 0.6f) return TerrainType::Forest;
-            if (noise < 0.8f) return TerrainType::Mountain;
+            if (noise < 0.5f) return TerrainType::Forest;
+            if (noise < 0.75f) return TerrainType::Mountain;
             return TerrainType::Peak;
         case BiomeType::Arctic:
             if (noise < 0.2f) return TerrainType::Water;
@@ -49,7 +49,7 @@ std::string getTileSymbol(const Tile &tile) {
     std::string symbol = " ";  // Default: empty space
     std::string pieceColor = ""; // Default: no color
     
-    if (tile.terrain == TerrainType::Water) return "\033[34m[~]\033[0m"; // Water tiles can never hold pieces
+    if (tile.terrain == TerrainType::Water) return "\033[34m[~~]\033[0m"; // Water tiles can never hold pieces
 
     if (tile.occupyingPiece) {
         // Determine piece letter
@@ -74,11 +74,11 @@ std::string getTileSymbol(const Tile &tile) {
     // Get terrain bracket color
     std::string bracketColor;
     switch (tile.terrain) {
-        case TerrainType::Field:    bracketColor = "\033[33m"; break;  // Yellow
-        case TerrainType::Forest:   bracketColor = "\033[32m"; break;  // Green
+        case TerrainType::Field:    bracketColor = "\033[93m"; break;  // Yellow
+        case TerrainType::Forest:   bracketColor = "\033[92m"; break;  // Green
         case TerrainType::Mountain: bracketColor = "\033[35m"; break;  // Purple
-        case TerrainType::Desert:   bracketColor = "\033[93m"; break;  // HI Yellow
-        case TerrainType::Jungle:   bracketColor = "\033[92m"; break;  // HI Green
+        case TerrainType::Desert:   bracketColor = "\033[33m"; break;  // HI Yellow
+        case TerrainType::Jungle:   bracketColor = "\033[32m"; break;  // HI Green
         case TerrainType::Peak:     bracketColor = "\033[30m"; break;  // Black
         // Arctic Tiles
         case TerrainType::IceField: bracketColor = "\033[36m"; break;  // Cyan
@@ -87,7 +87,7 @@ std::string getTileSymbol(const Tile &tile) {
     }
     
     // Construct final symbol
-    return bracketColor + "[" + "\033[39m" + 
+    return bracketColor + "[ " + "\033[39m" + 
            pieceColor + symbol + "\033[39m" + 
            bracketColor + "]" + "\033[39m";
 }

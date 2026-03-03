@@ -33,13 +33,22 @@ Board makeBoard(int width, int height, unsigned int seed, int octaves, BiomeType
 /*  This is a complicated bit of code, so I'm explaining it here. board.tiles[] is a vector array, defined in boards.hpp. The two loops iterate through this array, using board.height and board.width (also defined in boards.hpp) to know when to end and begin new rows. The tile index, when given to the array board.tiles[] will return one tile struct. That tile struct is then passed through getTileSymbol, which takes a tile struct and returns a std::string object corresponding to the properties of the tile struct. That gets printed with std::cout and the index gets incremented.*/
 void printBoard(const Board &board) {
     int tileIndex = 0;
-    std::cout << "   "; // Empty space at the start of coordinate numbering
+    std::cout << "    "; // Empty space at the start of coordinate numbering
     for (int i = 0; i < board.width; i++) { // Column numbering
-        std::cout << "[" << i << "]";
+        if (i < 10) {
+            std::cout << "[0" << i << "]";
+        } else {
+            std::cout << "[" << i << "]";
+        }
     }
     std::cout << std::endl;
     for (int i = 0; i < board.height; i++) {
-        std::cout << "[" << i << "]"; // Row numbering
+        if (i < 10) {
+            std::cout << "[0" << i << "]"; // Row numbering
+        } else {
+            std::cout << "[" << i << "]";
+        }
+
         for (int j = 0; j < board.width; j++) {
             std::cout << "\033[49m" << getTileSymbol(board.tiles[tileIndex]) << "\033[0m";
             tileIndex++;

@@ -2,7 +2,7 @@
 #include "boards.hpp"
 #include "pieces.hpp"
 #include "tiles.hpp"
-#include "instancetypes.hpp"
+#include "types.hpp"
 
 #include <iostream>
 #include <vector>
@@ -20,9 +20,11 @@ GameInstance::GameInstance(BiomeType biome, MissionType mission, int octave) {
 
     // Random width and height
     std::mt19937 gen(seed);
-    std::uniform_int_distribution<int> dis(5, 20);
+    std::uniform_int_distribution<int> dis(8, 20);
     boardHeight = dis(gen);
     boardWidth = dis(gen);
+    std::cout << "Board height: " << boardHeight << std::endl;
+    std::cout << "Board width: " << boardWidth << std::endl;
 }
 
 // This function actually initalizes the game instance, taking values from the constructor to generate a board

@@ -54,7 +54,7 @@ enum class BiomeType {
 };
 
 enum class MissionType {
-
+    FillerMission
 };
 
 #endif
