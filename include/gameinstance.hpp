@@ -6,7 +6,7 @@
 #include "boards.hpp"
 #include "tiles.hpp"
 #include "pieces.hpp"
-#include "instancetypes.hpp"
+#include "types.hpp"
 
 // An instance of a game. Basically contains everything needed to run the core mechanics of the game
 class GameInstance {

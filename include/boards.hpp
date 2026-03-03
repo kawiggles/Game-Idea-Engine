@@ -2,7 +2,7 @@
 #define BOARDS_HPP
 
 #include <vector>
-#include "instancetypes.hpp"
+#include "types.hpp"
 
 // Forward declarations
 struct Tile; 

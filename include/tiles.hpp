@@ -1,25 +1,11 @@
 #ifndef TILES_HPP
 #define TILES_HPP
 
+#include "types.hpp"
+
 #include <string>
 
 // Objects:
-
-// Names for different kinds of terrain, not using ints because the logic for each terrain piece will be complicated
-enum class TerrainType {
-    Field,
-    Forest,
-    Water,
-    Mountain,
-    Road,
-    Desert,
-    Jungle,
-    Peak,
-    IceField,
-    SnowField,
-    Tundra
-};
-
 struct Piece; // Forward declaration of Piece struct, which is in pieces.hpp
 
 struct Tile {

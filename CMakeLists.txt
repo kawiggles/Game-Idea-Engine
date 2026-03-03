@@ -25,7 +25,7 @@ target_sources(TestBuild
             include/tiles.hpp
             include/runes.hpp
             include/PerlinNoise.hpp
-            include/instancetypes.hpp
+            include/types.hpp
 )
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

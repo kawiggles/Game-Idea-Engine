@@ -3,34 +3,7 @@
 
 #include <string>
 #include "runes.hpp"
-
-// All the different types of pieces, defines movement and base stats for a piece
-enum class PieceType {
-    Light,
-    Shield,
-    Elite,
-    Archer,
-    LCavalry,
-    MCavalry,
-    HCavalry,
-    Commander,
-    Wizard
-};
-
-enum class PieceCategory {
-    Infantry, //Light, Shield, Elite, Archer
-    Cavalry, // Light, Medium, and Heavy Cavalry
-    Special // Commander and Wizard
-};
-
-// The materials each piece can be made of, works as a class for the rune logic system
-enum class PieceMaterial {
-    Wood,
-    Iron,
-    Silver,
-    Gold,
-    Diamond
-};
+#include "types.hpp"
 
 struct RuneSentence; // Forward declaration of Rune struct, which is in runes.hpp
 
