@@ -1,8 +1,13 @@
 #include "tiles.hpp"
-#include "pieces.hpp"
 #include "types.hpp"
+#include "boards.hpp"
+#include "pieces.hpp"
 
-#include <string>
+#include <cstdlib>
+#include <iostream>
+#include <unordered_map>
+#include <queue>
+#include <algorithm>
 
 TerrainType getRandomTerrain(float noise, BiomeType biome) {
     switch (biome) {
@@ -45,6 +50,110 @@ TerrainType getRandomTerrain(float noise, BiomeType biome) {
     }
 }
 
+std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, Board &board) {
+    std::cout << "Starting A* search algorithm" << std::endl;
+    // Utility functions
+    auto getTileId = [&board](Tile *tile) { 
+        return tile->x + board.width * tile->y; 
+    };
+
+    auto h = [endTile](Tile * a) { // Lambda function for h 
+        return std::abs(endTile->x - a->x) + std::abs(endTile->y - a->y);
+    };
+
+    auto getCost = [](TerrainType terrain) { // gScore
+        switch(terrain) {
+            case TerrainType::Field:    return 1;
+            case TerrainType::Forest:   return 3;
+            case TerrainType::Mountain: return 10;
+            case TerrainType::Desert:   return 2;
+            case TerrainType::Jungle:   return 5;
+            case TerrainType::Peak:     return 20;
+            default:                    return 999; // Includes roads, water, and arctic environments
+        }
+    };
+
+    auto getNeighbors = [&board] (Tile *tile) {
+        std::vector<int> neighbors;
+        int vectors[4][2] = { { 1, 0},
+                              { 0, 1},
+                              {-1, 0},
+                              { 0,-1} };
+        for (int i = 0; i < 4; i++) {
+            int nx = tile->x + vectors[i][0];
+            int ny = tile->y + vectors[i][1];
+            if (nx >= 0 && nx < board.width && ny >= 0 && ny < board.height) {
+                neighbors.push_back(tile->x + vectors[i][0] + board.width * (tile->y + vectors[i][1]));
+            }
+        }
+        return neighbors;
+    };
+
+    // A* Search to find road pathing
+    int startTileId = getTileId(startTile);
+
+    std::unordered_map<int, int> closedList; // cameFrom := an empty map
+    std::unordered_map<int, int> gScore; // gScore := map with default value of Infinity
+                                          // maps TileId to gScore
+    gScore[startTileId] = 0; // gScore[start] := 0
+
+    std::unordered_map<int, int> fScore; // fScore := map with default value of Infinit
+                                          // maps TileId to fScore
+    fScore[startTileId] = h(startTile); // fScore[start] := h(start)
+    
+    auto compare = [&fScore](int a, int b) { // Lambda function to determine node priority
+        return fScore[a] > fScore[b]; // cursed af
+    };
+
+    std::priority_queue<int, std::vector<int>, decltype(compare)> openSet(compare); // openSet := {start}
+    std::vector<int> checkSet; // for checking contents of openSet
+
+    openSet.push(startTileId);
+    checkSet.push_back(startTileId);
+    
+    std::cout << "Algorithm initiated at (" << startTile->x+1 << ", " << startTile->y+1 << ")." << std::endl;
+    std::cout << "Algorithm target is (" << endTile->x+1 << ", " << endTile->y+1 << ")." << std::endl;
+
+    while (!(openSet.empty())) { // while openSet is not empty
+        int current = openSet.top(); // current := the node in openSet having the lowest fScore[] value
+                                 // Because the openSet comp lambda sorts by lowest f, it will always be the top of openSet
+        if (current == getTileId(endTile)) { // if current = goal 
+            std::cout << "Road path found, generating path vector." << std::endl;
+            std::vector<Tile *> path;
+            path.push_back(&board.tiles[current]); // total_path := {current}
+
+            while (closedList.count(current) == 1) { // while current in cameFrom.Keys:
+                current = closedList[current]; // current := cameFrom[current]
+                path.push_back(&board.tiles[current]); // total_path.prepend(current)
+            }
+            return path; // return total_path  
+        }        
+        
+        openSet.pop(); // openSet.Remove(current)
+        checkSet.erase(find(checkSet.begin(), checkSet.end(), current)); // remove current from the check set
+        
+        std::vector<int> neighbors = getNeighbors(&board.tiles[current]);
+        for (int i = 0; i < neighbors.size(); i++) { // for each neighbor of current
+            int tenativeG = gScore[current] + getCost(board.tiles[neighbors[i]].terrain); // tenative_gScore := gScore[current] + d(current, neighbor) 
+            if (gScore.find(neighbors[i]) == gScore.end() || tenativeG < gScore[neighbors[i]]) { // if tenative_gScore > gScore[neighbor]
+                closedList[neighbors[i]] = current; // cameFrom[neighbor] := current
+                gScore[neighbors[i]] = tenativeG; // gScore[neighbor] := tenative_gScore
+                fScore[neighbors[i]] = tenativeG + h(&board.tiles[neighbors[i]]); // fScore[neighbor] := tenative_gScore + h(neighbor)
+                
+                if (find(checkSet.begin(), checkSet.end(), neighbors[i]) == checkSet.end()) { // if neighbor not in openSet
+                    openSet.push(neighbors[i]); // openSet.add(neighbor)
+                    checkSet.push_back(neighbors[i]); // and same for the check set
+                }
+            }
+
+        }
+
+    }
+    std::cout << "Algorithm failed." << std::endl;
+    std::vector<Tile *> failure = { nullptr };
+    return failure;
+}
+
 std::string getTileSymbol(const Tile &tile) {
     std::string symbol = " ";  // Default: empty space
     std::string pieceColor = ""; // Default: no color
@@ -77,6 +186,7 @@ std::string getTileSymbol(const Tile &tile) {
         case TerrainType::Field:    bracketColor = "\033[93m"; break;  // Yellow
         case TerrainType::Forest:   bracketColor = "\033[92m"; break;  // Green
         case TerrainType::Mountain: bracketColor = "\033[35m"; break;  // Purple
+        case TerrainType::Road:     bracketColor = "\033[91m"; break;  // HI Red
         case TerrainType::Desert:   bracketColor = "\033[33m"; break;  // HI Yellow
         case TerrainType::Jungle:   bracketColor = "\033[32m"; break;  // HI Green
         case TerrainType::Peak:     bracketColor = "\033[30m"; break;  // Black

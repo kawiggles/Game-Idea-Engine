@@ -2,12 +2,14 @@
 #include "boards.hpp"
 #include "types.hpp"
 #include "PerlinNoise.hpp"
+#include "gameinstance.hpp"
 
 #include <iostream>
 #include <vector>
 #include <unordered_set>
 
-Board makeBoard(int width, int height, unsigned int seed, int octaves, BiomeType biome, MissionType mission) {
+Board makeBoard(int width, int height, unsigned int seed, int octaves, BiomeType biome, MissionType mission, bool genRoad) {
+    std::cout << "Generating board of dimensions " << width << " by " << height << "." <<std::endl;
     Board board {width, height, {}};
     board.tiles.reserve(width * height); // Allocate memory space for vector equal to area of board
     
@@ -25,6 +27,34 @@ Board makeBoard(int width, int height, unsigned int seed, int octaves, BiomeType
         }
     }
 
+    if (genRoad) {
+        std::cout << "Generating road." << std::endl;
+        Tile * startRoad;
+        Tile * endRoad;
+        for (int i = 0; i < width; i++) {
+            Tile * currentTile = &board.tiles[i];
+            if (currentTile->terrain == TerrainType::Field || currentTile->terrain == TerrainType::Forest) {
+                startRoad = currentTile;
+                break;
+            }
+        }
+        
+        for (int i = width; i >= 0; i--) {
+            Tile * currentTile = &board.tiles[i * (height-1) + (width-1)];
+            if (currentTile->terrain == TerrainType::Field || currentTile->terrain == TerrainType::Forest) {
+                endRoad = currentTile;
+                break;
+            }
+        }
+
+        std::vector<Tile *> road;
+        if (startRoad != nullptr && endRoad != nullptr) road = generateRoad(startRoad, endRoad, board);
+        for (Tile * tile : road) {
+            if (tile != nullptr) {
+                tile->terrain = TerrainType::Road;
+            }
+        }
+    }
     return board;
 }
 

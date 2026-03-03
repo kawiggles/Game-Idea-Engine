@@ -44,7 +44,7 @@ Piece makeNewPiece(std::string name, PieceMaterial material, PieceType type, boo
             newPiece.strength = 1;
             newPiece.toughness = 1;
             newPiece.maxCardinal = 1;
-            newPiece.maxDiagonal = 5;
+            newPiece.maxDiagonal = 6;
             newPiece.rangedAttackDistance = 2;
             break;
         case PieceType::MCavalry:
@@ -58,7 +58,7 @@ Piece makeNewPiece(std::string name, PieceMaterial material, PieceType type, boo
             newPiece.category = PieceCategory::Cavalry;
             newPiece.strength = 3;
             newPiece.toughness = 2;
-            newPiece.maxCardinal = 5; 
+            newPiece.maxCardinal = 4; 
             newPiece.maxDiagonal = 0;
             break;
         case PieceType::Commander:

@@ -25,9 +25,8 @@ int main() {
     };
 
     // Make a new game instance
-    GameInstance testGame(BiomeType::Temperate, MissionType::FillerMission, 1);
+    GameInstance testGame(BiomeType::Alpine, MissionType::FillerMission, 1, true);
     testGame.makeGame(testPlayerPieces, testEnemyPieces);
-    std::cout << "Board tile count: " << testGame.board.tiles.size() << std::endl;
 
     // Add player pieces
     testGame.addPiece(&testGame.playerPieces[0], testGame.boardWidth-1, testGame.boardHeight-1);
@@ -42,7 +41,7 @@ int main() {
     // Moving pieces and reprinting board:
     bool endProgram = false;
     while (!endProgram) {
-        std::system("clear");
+        // std::system("clear");
         printBoard(testGame.board);
 
         char input;
