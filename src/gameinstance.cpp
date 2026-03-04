@@ -10,7 +10,6 @@
 
 // Game Instance constructor, used to initialize a game instance
 GameInstance::GameInstance(BiomeType biome, MissionType mission, int octave, bool hasRoad) {
-    std::cout << "Initializing Game Instance seed." << std::endl;
     this->biome = biome;
     this->mission = mission;
     this->octave = octave;
@@ -29,7 +28,6 @@ GameInstance::GameInstance(BiomeType biome, MissionType mission, int octave, boo
 
 // This function actually initalizes the game instance, taking values from the constructor to generate a board
 void GameInstance::makeGame(std::vector<Piece> runPieces, std::vector<Piece> enemyPieces) {
-    std::cout << "Generating Game Instance from seed." << std::endl;
     board = makeBoard(GameInstance::boardWidth, GameInstance::boardHeight, GameInstance::seed, GameInstance::octave, GameInstance::biome, GameInstance::mission, GameInstance::road);
     this->playerPieces = runPieces; 
     this->enemyPieces = enemyPieces;
@@ -160,9 +158,13 @@ std::vector<Tile *> GameInstance::getValidMoves(Piece * piece) {
                         (i < 4) ? cardinalEval-- : diagonalEval--;
                         break;
                     }
-                case TerrainType::Road:
-                    if (getTile(checkTile->x + vectors[i][0], checkTile->y + vectors[i][1])->terrain == TerrainType::Road) (i < 4) ? cardinalEval++ : diagonalEval++; // Beautiful
+                case TerrainType::Road: {
+                    Tile * nextTile = getTile(checkTile->x + vectors[i][0], checkTile->y + vectors[i][0]);
+                    if (nextTile != nullptr &&
+                        nextTile->terrain != TerrainType::Water &&
+                        nextTile->terrain == TerrainType::Road) (i < 4) ? cardinalEval++ : diagonalEval++; // Beautiful
                     break;
+                    }
                 case TerrainType::Desert:
                     relativeStrengthMod--;
                     (i < 4) ? cardinalEval-- : diagonalEval--;

@@ -25,7 +25,7 @@ int main() {
     };
 
     // Make a new game instance
-    GameInstance testGame(BiomeType::Alpine, MissionType::FillerMission, 1, true);
+    GameInstance testGame(BiomeType::Tropical, MissionType::FillerMission, 2, true);
     testGame.makeGame(testPlayerPieces, testEnemyPieces);
 
     // Add player pieces
@@ -63,7 +63,7 @@ int main() {
             case ('A'): case ('a'): selectedPiece = &testGame.enemyPieces[0]; break;
             case ('W'): case ('w'): selectedPiece = &testGame.enemyPieces[1]; break;
             default:
-                std::cout << "Piece identifier not recognized. Enter to continue.";
+                std::cout << "Piece identifier not recognized. Enter to continue." << std::endl;
                 continue;
         }
 
@@ -72,9 +72,9 @@ int main() {
         printValidTilesBoard(testGame.board, validMoves);
 
         int xin, yin;
-        std::cout << "\nEnter new x coordinate:";
+        std::cout << "\nEnter new x coordinate: ";
         std::cin >> xin;
-        std::cout << "Enter new y coordinate:";
+        std::cout << "Enter new y coordinate: ";
         std::cin >> yin;
         std::cin.ignore();
 
