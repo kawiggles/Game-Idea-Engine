@@ -1,7 +1,5 @@
 #include "pieces.hpp"
 #include <vector>
-#include "boards.hpp"
-#include "tiles.hpp"
 
 Piece makeNewPiece(std::string name, PieceMaterial material, PieceType type, bool owner) {
     Piece newPiece{name, material, type};

@@ -2,7 +2,6 @@
 #define PIECES_HPP
 
 #include <string>
-#include "runes.hpp"
 #include "types.hpp"
 
 struct RuneSentence; // Forward declaration of Rune struct, which is in runes.hpp

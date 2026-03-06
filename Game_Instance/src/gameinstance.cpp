@@ -167,6 +167,7 @@ std::vector<Tile *> GameInstance::getValidMoves(Piece * piece) {
                     }
                 case TerrainType::Desert:
                     relativeStrengthMod--;
+                    relativeToughnessMod--;
                     (i < 4) ? cardinalEval-- : diagonalEval--;
                     break;
                 case TerrainType::Jungle:
