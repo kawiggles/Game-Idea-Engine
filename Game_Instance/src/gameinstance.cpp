@@ -141,23 +141,23 @@ std::vector<Tile *> GameInstance::getValidMoves(Piece * piece) {
                 case TerrainType::Field:
                     break;
                 case TerrainType::Forest:
-                    if (!(piece->type == PieceType::Light  || 
-                          piece->type == PieceType::Archer ||
-                          piece->type == PieceType::LCavalry)) (i < 4) ? cardinalEval-- : diagonalEval--; // Decrease movement by one
-                    relativeStrengthMod++;
+                    if ((piece->category == PieceCategory::Cavalry && 
+                         piece->type != PieceType::LCavalry) || 
+                         piece->category == PieceCategory::Siege) (i < 4) ? cardinalEval-- : diagonalEval--; // Decrease movement by one
+                    relativeToughnessMod++;
                     break;
                 case TerrainType::Water:
                     stopMove = true;
                     break;
                 case TerrainType::Mountain:
-                    if (piece->category == PieceCategory::Cavalry) {
+                    if (piece->category == PieceCategory::Cavalry || 
+                        piece->category == PieceCategory::Siege) {
                         stopMove = true;
-                        break;
                     } else {
-                        relativeToughnessMod++;
                         (i < 4) ? cardinalEval-- : diagonalEval--;
-                        break;
                     }
+                    relativeStrengthMod++;
+                    break;
                 case TerrainType::Road: {
                     Tile * nextTile = getTile(checkTile->x + vectors[i][0], checkTile->y + vectors[i][0]);
                     if (nextTile != nullptr &&
@@ -166,7 +166,6 @@ std::vector<Tile *> GameInstance::getValidMoves(Piece * piece) {
                     break;
                     }
                 case TerrainType::Desert:
-                    relativeStrengthMod--;
                     relativeToughnessMod--;
                     (i < 4) ? cardinalEval-- : diagonalEval--;
                     break;

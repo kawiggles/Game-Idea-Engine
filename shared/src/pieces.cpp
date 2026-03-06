@@ -1,83 +1,116 @@
 #include "pieces.hpp"
+#include "types.hpp"
+
 #include <vector>
 
-Piece makeNewPiece(std::string name, PieceMaterial material, PieceType type, bool owner) {
-    Piece newPiece{name, material, type};
-    newPiece.ownedByPlayer = owner;
+Piece::Piece(PieceMaterial m, PieceType t, bool o)
+    : id(nextId()), material(m), type(t), ownedByPlayer(o) {
 
     switch(type) {
         case PieceType::Light:
-            newPiece.category = PieceCategory::Infantry;
-            newPiece.canMoveThroughPieces = true;
-            newPiece.strength = 1;
-            newPiece.toughness = 1;
-            newPiece.maxCardinal = 2;
-            newPiece.maxDiagonal = 2;
+            category = PieceCategory::Infantry;
+            canMoveThroughPieces = true;
+            strength = 1;
+            toughness = 1;
+            maxCardinal = 2;
+            maxDiagonal = 2;
             break;
         case PieceType::Shield:
-            newPiece.category = PieceCategory::Infantry;
-            newPiece.strength = 1;
-            newPiece.toughness = 3;
-            newPiece.maxCardinal = 1;
-            newPiece.maxDiagonal = 0;
+            category = PieceCategory::Infantry;
+            strength = 1;
+            toughness = 3;
+            maxCardinal = 1;
+            maxDiagonal = 0;
             break;
         case PieceType::Elite:
-            newPiece.category = PieceCategory::Infantry;
-            newPiece.strength = 2;
-            newPiece.toughness = 2;
-            newPiece.maxCardinal = 1;
-            newPiece.maxDiagonal = 1;
+            category = PieceCategory::Infantry;
+            strength = 2;
+            toughness = 2;
+            maxCardinal = 1;
+            maxDiagonal = 1;
             break;
         case PieceType::Archer:
-            newPiece.category = PieceCategory::Infantry;
-            newPiece.strength = 1;
-            newPiece.toughness = 1;
-            newPiece.maxCardinal = 2;
-            newPiece.maxDiagonal = 2;
-            newPiece.rangedAttackDistance = 2;
+            category = PieceCategory::Infantry;
+            strength = 1;
+            toughness = 1;
+            maxCardinal = 2;
+            maxDiagonal = 2;
             break;
         case PieceType::LCavalry:
-            newPiece.category = PieceCategory::Cavalry;
-            newPiece.canMoveThroughPieces = true;
-            newPiece.strength = 1;
-            newPiece.toughness = 1;
-            newPiece.maxCardinal = 1;
-            newPiece.maxDiagonal = 6;
-            newPiece.rangedAttackDistance = 2;
+            category = PieceCategory::Cavalry;
+            canMoveThroughPieces = true;
+            strength = 1;
+            toughness = 1;
+            maxCardinal = 1;
+            maxDiagonal = 6;
             break;
         case PieceType::MCavalry:
-            newPiece.category = PieceCategory::Cavalry;
-            newPiece.strength = 2;
-            newPiece.toughness = 1;
-            newPiece.maxCardinal = 5; // Effectively Infinite
-            newPiece.maxDiagonal = 5;
+            category = PieceCategory::Cavalry;
+            strength = 2;
+            toughness = 1;
+            maxCardinal = 5; // Effectively Infinite
+            maxDiagonal = 5;
             break;
         case PieceType::HCavalry:
-            newPiece.category = PieceCategory::Cavalry;
-            newPiece.strength = 3;
-            newPiece.toughness = 2;
-            newPiece.maxCardinal = 4; 
-            newPiece.maxDiagonal = 0;
+            category = PieceCategory::Cavalry;
+            strength = 3;
+            toughness = 2;
+            maxCardinal = 4; 
+            maxDiagonal = 0;
+            break;
+        case PieceType::Catapult:
+            category = PieceCategory::Siege;
+            strength = 0;
+            toughness = 1;
+            maxCardinal = 0;
+            maxDiagonal = 0;
+            break;
+        case PieceType::Ballista:
+            category = PieceCategory::Siege;
+            strength = 0;
+            toughness = 1;
+            maxCardinal = 1;
+            maxDiagonal = 1;
+            break;
+        case PieceType::Chariot:
+            category = PieceCategory::Siege;
+            strength = 4;
+            toughness = 3;
+            maxCardinal = 5;
+            maxDiagonal = 0;
             break;
         case PieceType::Commander:
-            newPiece.category = PieceCategory::Special;
-            newPiece.strength = 1;
-            newPiece.toughness = 2;
-            newPiece.maxCardinal = 1; 
-            newPiece.maxDiagonal = 1;
-            newPiece.commanderRunes = true;
+            category = PieceCategory::Special;
+            strength = 1;
+            toughness = 2;
+            maxCardinal = 1; 
+            maxDiagonal = 1;
+            commanderRunes = true;
             break;
         case PieceType::Wizard:
-            newPiece.category = PieceCategory::Special;
-            newPiece.strength = 1;
-            newPiece.toughness = 1;
-            newPiece.maxCardinal = 2; 
-            newPiece.maxDiagonal = 2;
-            newPiece.wizardRunes = true;
+            category = PieceCategory::Special;
+            strength = 1;
+            toughness = 1;
+            maxCardinal = 2; 
+            maxDiagonal = 2;
+            wizardRunes = true;
             break;
-    }
-
-    return newPiece;
+        case PieceType::Assassin:
+            category = PieceCategory::Special;
+            strength = 5;
+            toughness = 1;
+            maxCardinal = 3;
+            maxDiagonal = 3;
+            break;
+        case PieceType::Druid:
+            category = PieceCategory::Special;
+            strength = 1;
+            toughness = 1;
+            maxCardinal = 2;
+            maxDiagonal = 2;
+            druidRunes = true;
+            break;
+    } 
 
 }
 
