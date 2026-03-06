@@ -7,7 +7,6 @@
 
 #include <iostream>
 #include <assert.h>
-#include <cstdlib>
 
 int main() {
     std::cout << "Test Begin..." << std::endl;

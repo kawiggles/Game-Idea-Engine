@@ -10,14 +10,20 @@ enum class PieceType {
     LCavalry,
     MCavalry,
     HCavalry,
+    Catapult,
+    Ballista,
+    Chariot,
     Commander,
-    Wizard
+    Wizard,
+    Assassin,
+    Druid
 };
 
 enum class PieceCategory {
-    Infantry, //Light, Shield, Elite, Archer
-    Cavalry, // Light, Medium, and Heavy Cavalry
-    Special // Commander and Wizard
+    Infantry, //Light, Shield, Elite, and Archer
+    Cavalry,  // Light, Medium, and Heavy Cavalry
+    Siege,    // Catapult, Ballista, and Chairot
+    Special   // Commander, Wizard, Assasin, and Druid
 };
 
 // The materials each piece can be made of, works as a class for the rune logic system
@@ -55,6 +61,10 @@ enum class BiomeType {
 
 enum class MissionType {
     FillerMission
+};
+
+enum class Leader {
+    Standard
 };
 
 #endif
