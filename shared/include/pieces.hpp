@@ -9,11 +9,12 @@ struct RangedAttack {
     int maxRange;
     int minRange;
     int strength;
+    bool canShootThroughPieces;
 };
 
 struct Piece {
     // Core Attributes
-    const unsigned int id;
+    unsigned int id;
     PieceMaterial material;
     PieceType type;
     PieceCategory category;

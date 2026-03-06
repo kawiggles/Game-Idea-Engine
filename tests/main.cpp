@@ -12,16 +12,14 @@ int main() {
     std::cout << "Test Begin..." << std::endl;
 
     // Create arrays of test of pieces
-    std::vector<Piece> testPlayerPieces = {
-        makeNewPiece("test1", PieceMaterial::Wood, PieceType::Light, true),
-        makeNewPiece("test2", PieceMaterial::Gold, PieceType::LCavalry, true),
-        makeNewPiece("test3", PieceMaterial::Diamond, PieceType::HCavalry, true)
-    };
+    std::vector<Piece> testPlayerPieces; 
+    testPlayerPieces.emplace_back(Piece(PieceMaterial::Wood, PieceType::Light, true));
+    testPlayerPieces.emplace_back(Piece(PieceMaterial::Gold, PieceType::LCavalry, true));
+    testPlayerPieces.emplace_back(Piece(PieceMaterial::Diamond, PieceType::HCavalry, true));
 
-    std::vector<Piece> testEnemyPieces = {
-        makeNewPiece("test4", PieceMaterial::Iron, PieceType::Archer, false),
-        makeNewPiece("test5", PieceMaterial::Silver, PieceType::Wizard, false)
-    };
+    std::vector<Piece> testEnemyPieces; 
+    testEnemyPieces.emplace_back(Piece(PieceMaterial::Iron, PieceType::Archer, false));
+    testEnemyPieces.emplace_back(Piece(PieceMaterial::Silver, PieceType::Wizard, false));
 
     // Make a new game instance
     GameInstance testGame(BiomeType::Tropical, MissionType::FillerMission, 2, true);
