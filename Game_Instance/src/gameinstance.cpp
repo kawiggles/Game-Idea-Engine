@@ -99,13 +99,6 @@ std::vector<Tile *> GameInstance::getValidMoves(Piece * piece) {
     std::vector<Tile *> validTiles; // validTiles is the vector we'll return
     validTiles.reserve((cardinalMax * 4) + (diagonalMax * 4)); // I could write a ton of logic to get this to work with the inifinite movement pieces, but fuck that shit, it can be massive in those instances
 
-/*  // Test code, loop to return the enire board as valid tiles
-    validTiles.reserve(board.tiles.size());
-    for (Tile &t : board.tiles) {
-        validTiles.push_back(&t);
-    }
-*/
-
 // We're doing linear algebra, we need an array of arrays. This is some C shit, baby! 
     int vectors[8][2] = {
         { 1, 0}, // Right
@@ -167,6 +160,10 @@ std::vector<Tile *> GameInstance::getValidMoves(Piece * piece) {
                     (i < 4) ? cardinalEval-- : diagonalEval--;
                     break;
                 case TerrainType::Jungle:
+                    if (piece->category == PieceCategory::Siege) {
+                        stopMove = true;
+                        break;
+                    }
                     if (!(piece->type == PieceType::Light)) (i < 4) ? cardinalEval-- : diagonalEval--;
                     if (piece->category == PieceCategory::Cavalry) (i < 4) ? cardinalEval-- : diagonalEval--;
                     relativeToughnessMod++;
@@ -248,6 +245,15 @@ bool GameInstance::movePiece(Piece * piece, int x, int y) {
             std::cout << "DEBUG: Attempting to move piece to (" << x << ", " << y << ")" << std::endl;
             std::cout << "DEBUG: Piece currently at (" << currentTile->x << ", " << currentTile->y << ")" << std::endl;
             */
+            if (currentTile->occupyingPiece->ownedByPlayer) {
+                int index;
+                while (&playerPieces[index] != currentTile->occupyingPiece) index++;
+                playerPieces.erase(playerPieces.begin() + index);
+            } else {
+                int index;
+                while (&enemyPieces[index] != currentTile->occupyingPiece) index++;
+                enemyPieces.erase(enemyPieces.begin() + index);
+            }
             currentTile->occupyingPiece = nullptr;
             targetTile->occupyingPiece = piece;
             return true;

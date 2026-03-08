@@ -2,7 +2,7 @@ add_library(Game_Instance STATIC
     src/boards.cpp
     src/gameinstance.cpp
     src/tiles.cpp
-    src/enemy.c
+    src/enemy.cpp
 )
 
 target_include_directories(Game_Instance
