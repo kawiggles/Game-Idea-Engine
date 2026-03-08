@@ -12,7 +12,7 @@
 class GameInstance {
     public:
         // Constructor
-        GameInstance(BiomeType biome, MissionType mission, int octave, bool hasRoad);
+        GameInstance(unsigned int seed, BiomeType biome, MissionType mission, int octave, bool hasRoad);
 
         // Public Members of GameInstance
         bool playerWin;

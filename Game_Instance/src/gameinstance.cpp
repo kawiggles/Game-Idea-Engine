@@ -9,15 +9,12 @@
 #include <random>
 
 // Game Instance constructor, used to initialize a game instance
-GameInstance::GameInstance(BiomeType biome, MissionType mission, int octave, bool hasRoad) {
+GameInstance::GameInstance(unsigned int seed, BiomeType biome, MissionType mission, int octave, bool hasRoad) {
     this->biome = biome;
     this->mission = mission;
     this->octave = octave;
+    this->seed = seed;
     road = hasRoad;
-
-    // Seed for Perlin Noise and random board width and height
-    std::random_device rd;
-    seed = rd();
 
     // Random width and height
     std::mt19937 gen(seed);

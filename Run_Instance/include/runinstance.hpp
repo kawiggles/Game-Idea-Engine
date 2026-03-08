@@ -11,6 +11,7 @@ class RunInstance {
         RunInstance(Map oldMap, Leader leader);
 
         // Public Members
+        int seed;
         Leader leader;
         Map map;
         std::vector<Piece> runPieces;

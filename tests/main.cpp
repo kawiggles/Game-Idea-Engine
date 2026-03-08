@@ -22,7 +22,7 @@ int main() {
     testEnemyPieces.emplace_back(Piece(PieceMaterial::Silver, PieceType::Wizard, false));
 
     // Make a new game instance
-    GameInstance testGame(BiomeType::Tropical, MissionType::FillerMission, 2, true);
+    GameInstance testGame(1234, BiomeType::Tropical, MissionType::FillerMission, 2, true);
     testGame.makeGame(testPlayerPieces, testEnemyPieces);
 
     // Add player pieces

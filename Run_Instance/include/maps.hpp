@@ -6,9 +6,9 @@ struct Map {
 };
 
 // Function to generate map
-Map makeNewMap();
+Map makeMap();
 
 // Function to alter a passed map
-Map alterMap();
+Map alterMap(Map oldMap);
 
 #endif
