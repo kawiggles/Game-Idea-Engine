@@ -1,9 +1,14 @@
 #ifndef RUNINSTANCE_HPP 
 #define RUNINSTANCE_HPP
 
-#include "pieces.hpp"
-#include "maps.hpp"
 #include <vector>
+#include "types.hpp"
+#include "maps.hpp"
+#include "gameinstance.hpp"
+
+// Forward Declarations
+
+struct Piece;
 
 class RunInstance {
     public:
@@ -15,9 +20,11 @@ class RunInstance {
         Leader leader;
         Map map;
         std::vector<Piece> runPieces;
+        std::vector<GameInstance> gameInstances;
 
         // Public Methods
-        std::vector<Piece> getInitialPieces(Leader leader);
+        std::vector<GameInstance> generateGames();
+        std::vector<Piece> getInitialPieces();
 };
 
 #endif

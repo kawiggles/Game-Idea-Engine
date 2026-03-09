@@ -10,7 +10,7 @@ RunInstance::RunInstance(Map oldMap, Leader leader) {
 
     this->leader = leader;
     map = alterMap(oldMap);
-    runPieces = getInitialPieces(leader);
+    runPieces = getInitialPieces();
 
     
 }

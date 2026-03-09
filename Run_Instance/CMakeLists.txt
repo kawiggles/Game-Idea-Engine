@@ -7,4 +7,9 @@ target_include_directories(Run_Instance
     PUBLIC include/
 )
 
+target_include_directories(Run_Instance
+    PRIVATE
+    ${CMAKE_SOURCE_DIR}/Game_Instance/include/
+)
+
 target_link_libraries(Run_Instance PRIVATE shared)

@@ -2,7 +2,7 @@
 #define MAPS_HPP
 
 struct Map {
-
+    int PLACEHOLDERVALUE_CHANGE;
 };
 
 // Function to generate map
