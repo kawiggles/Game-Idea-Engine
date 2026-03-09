@@ -13,4 +13,7 @@ void printValidTilesBoard(std::vector<Tile> &board, std::vector<Move> moves, int
 // Function to set up a game instance, prompting user for piece placement
 void setupGame(GameInstance &game);
 
+// Function to get user input for a game instance
+
+
 #endif

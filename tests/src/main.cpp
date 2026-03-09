@@ -20,13 +20,9 @@ int main() {
     
     std::vector<Piece *> testEnemyPieces;
     // Make a new game instance
-    GameInstance testGame(1234, BiomeType::Tropical, MissionType::FillerMission, 2, true);
+    GameInstance testGame(1234, BiomeType::Tropical, MissionType::HoldThePoint, 2, true);
     testGame.makeGame(testPlayerPieces, testEnemyPieces);
-
-    // Add player pieces
-    testGame.addPiece(testGame.playerPieces[0], testGame.boardWidth-1, testGame.boardHeight-1);
-    testGame.addPiece(testGame.playerPieces[1], testGame.boardWidth-2, testGame.boardHeight-1);
-    testGame.addPiece(testGame.playerPieces[2], testGame.boardWidth-3, testGame.boardHeight-1);
+    setupGame(testGame);
 
     // Moving pieces and reprinting board:
     bool endProgram = false;
@@ -64,7 +60,7 @@ int main() {
         std::cin >> yin;
         std::cin.ignore();
 
-        if (testGame.movePiece(selectedPiece, xin-1, yin-1)) {
+        if (testGame.movePiece(selectedPiece, testGame.getTile(xin-1, yin-1))) {
             std::cout << "\nMove Successful. Press enter to build new board.\n";
             std::cin.ignore();
         } else {

@@ -44,6 +44,11 @@ enum class PieceMaterial {
     Diamond
 };
 
+enum class MoveType {
+    Move,
+    Shoot
+};
+
 enum class TerrainType {
     Field,
     Forest,
@@ -55,7 +60,8 @@ enum class TerrainType {
     Peak,
     IceField,
     SnowField,
-    Tundra
+    Tundra,
+    Objective
 };
 
 enum class BiomeType {
@@ -68,7 +74,7 @@ enum class BiomeType {
 };
 
 enum class MissionType {
-    FillerMission
+    HoldThePoint
 };
 
 enum class LeaderType {

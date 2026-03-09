@@ -11,6 +11,7 @@
 
 // A move structure, denoting the origin tile and target tile of a move
 struct Move {
+    MoveType type;
     Tile * from;
     Tile * to;
 };
@@ -41,7 +42,11 @@ class GameInstance {
         void makeGame(std::vector<Piece *> runPieces, std::vector<Piece *> enemyPieces);
 
         // The turn function, which alternates between the player turn and enemy turn
-        bool takeTurn();
+        int takePlayerTurn(Move move);
+        int takeEnemyTurn();
+
+        // Function to check if a mission is complete
+        bool isMissionComplete();
 
         // Two methods to get tiles, one from an (x,y) coordinate, and another from a piece object.
         Tile * getTile(int x, int y);
@@ -49,7 +54,7 @@ class GameInstance {
 
         // Methods to interact with pieces
         std::vector<Move> getValidMoves(Piece * piece);
-        bool movePiece(Piece * piece, int x, int y);
+        bool movePiece(Piece * piece, Tile * target);
         bool addPiece(Piece * piece, int x, int y);
         bool pieceExists(Piece * piece);
 };

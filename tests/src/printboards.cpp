@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <unordered_set>
+#include <cstdlib>
 
 /*  This is a complicated bit of code, so I'm explaining it here. board.tiles[] is a vector array, defined in boards.hpp. The two loops iterate through this array, using height and width (also defined in boards.hpp) to know when to end and begin new rows. The tile index, when given to the array board.tiles[] will return one tile struct. That tile struct is then passed through getTileSymbol, which takes a tile struct and returns a std::string object corresponding to the properties of the tile struct. That gets printed with std::cout and the index gets incremented.*/
 void printBoard(std::vector<Tile> &board, int width, int height) {
@@ -68,6 +69,67 @@ void printValidTilesBoard(std::vector<Tile> &board, std::vector<Move> moves, int
 }
 
 void setupGame(GameInstance &game) {
+    auto getPieceType = [](Piece * piece) {
+        switch(piece->type) {
+            case PieceType::Light:      return "Light Infantry";
+            case PieceType::Shield:     return "Shield Infantry";
+            case PieceType::Elite:      return "Elite Infantry";
+            case PieceType::Archer:     return "Archer";
+            case PieceType::LCavalry:   return "Light Cavalry";
+            case PieceType::MCavalry:   return "Medium Cavalry";
+            case PieceType::HCavalry:   return "Heavy Cavalry";
+            case PieceType::Catapult:   return "Trebuchet";
+            case PieceType::Ballista:   return "Ballista";
+            case PieceType::Chariot:    return "Chariot";
+            case PieceType::Commander:  return "Commander";
+            case PieceType::Wizard:     return "Wizard";
+            case PieceType::Assassin:   return "Assassin";
+            case PieceType::Druid:      return "Druid";
+            default:                    return "Unknown";
+        }
+    };
+    for (int i = 0; i < game.playerPieces.size(); i++) {
+        std::system("clear");
+        printBoard(game.board, game.boardWidth, game.boardHeight);
 
+        Piece * piece = game.playerPieces[i];
+        std::cout << "Placing piece " << i+1 << " of " << game.playerPieces.size() << ":" << std::endl;
+        std::cout << "    Piece type: " << getPieceType(piece) << std::endl; 
+
+        int xin, yin;
+        std::cout << "Enter x coordinate: ";
+        std::cin >> xin;
+        std::cin.ignore();
+
+        std::cout << "Enter y cooridnate: ";
+        std::cin >> yin;
+        std::cin.ignore();
+
+        xin--;
+        yin--;
+
+        if (xin >= game.boardWidth || xin < 0 || yin >= game.boardHeight || yin < 0) {
+            std::cout << "Error, selected (x, y) coordinate outside of board range.";
+            std::cin.ignore();
+            i--;
+            break;
+        }
+
+        if (yin < game.boardHeight - 3) {
+            std::cout << "Error, selected (x, y) coordinate outside of player deployment zone.";
+            std::cin.ignore();
+            i--;
+            break;
+        }
+
+        if (game.addPiece(piece, xin, yin)) {
+            std::cout << "Piece successfully added at (" << xin+1 << ", " << yin+1 << ")";
+            std::cin.ignore();
+        } else {
+            i--;
+            std::cout << "Piece placement unsuccessful, try again";
+            std::cin.ignore();
+        }
+    }
 }
 

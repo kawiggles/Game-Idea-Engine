@@ -212,6 +212,8 @@ std::string getTileSymbol(const Tile &tile) {
         case TerrainType::IceField: bracketColor = "\033[36m"; break;  // Cyan
         case TerrainType::SnowField:bracketColor = "\033[37m"; break;  // White
         case TerrainType::Tundra:   bracketColor = "\033[32m"; break;  // Green again, but it's fine because it replaces forests
+        // Mission Tiles
+        case TerrainType::Objective:bracketColor = "\033[94m"; break;  // HI Blue
     }
     
     // Construct final symbol
