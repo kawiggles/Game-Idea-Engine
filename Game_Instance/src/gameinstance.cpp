@@ -8,7 +8,26 @@
 #include <vector>
 #include <random>
 
-// Game Instance constructor, used to initialize a game instance
+/* 
+ * This file details the methods of the GameInstance object, which handles the logic for running a Game Instance.
+ * A Game Instance is first initialized by a bunch of properties determined by its parent Run Instance.
+ * The properties are the following:
+ *     - The seed, which is used to generate the random elements of the board, such as:
+ *         + Board dimensions
+ *         + The Perlin Noise map
+ *         + Mission objective location
+ *         + The enemy piece vector composition
+ *     - The biome, which is used to determine the tile makeup of a board
+ *     - The mission type, which defines the objectives of the game instance
+ *     - The perlin noise octave value
+ *     - Whether the map will have a road
+ * The Game Instance is initialized when a Run Instance is created.
+ * The properties are used to display information about a Game Instance before it is selected.
+ * When a Game Instance is selected it uses the makeGame function to actually generate the game board and copy the player's run pieces.
+ * From there, setupGame (external function) is used to prompt the player for where to addPiece(s).
+ * Then, takeTurn handles the turn by turn logic, which are repeated instances of movePiece.
+ */
+
 GameInstance::GameInstance(unsigned int seed, BiomeType biome, MissionType mission, int octave, bool hasRoad) {
     this->biome = biome;
     this->mission = mission;
@@ -16,19 +35,17 @@ GameInstance::GameInstance(unsigned int seed, BiomeType biome, MissionType missi
     this->seed = seed;
     this->hasRoad = hasRoad;
 
-    // Random width and height
-    std::mt19937 gen(seed);
+    std::mt19937 gen(seed); // Random width and height
     std::uniform_int_distribution<int> dis(8, 20);
     boardHeight = dis(gen);
     boardWidth = dis(gen);
 }
 
-// This function actually initalizes the game instance, taking values from the constructor to generate a board
 void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *> enemyPieces) {
     std::cout << "Generating game instance..." <<std::endl;
     std::cout << "Generating board of dimensions " << boardWidth << " by " << boardHeight << "." <<std::endl;
     std::vector<Tile> board;
-    board.reserve(boardWidth * boardHeight); // Allocate memory space for vector equal to area of board
+    board.reserve(boardWidth * boardHeight); 
     
     const siv::PerlinNoise noiseMap{ seed }; // Generate perlin noise map from seed
 
@@ -81,16 +98,13 @@ void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *>
     this->enemyPieces = enemyPieces;
 }
 
-// Widely used function to get a tile from an (x, y) coordinate
 Tile * GameInstance::getTile(int x, int y) {
-    // Return nullptr if no tile is found at the given coordinates
     if (x < 0 || x >= boardWidth || y < 0 || y >= boardHeight) {
         return nullptr;
     }
     return &board[(y * boardWidth) + x];
 }
 
-// Widely used function to check if a piece exists in a game instance
 bool GameInstance::pieceExists(Piece * piece) {
     if (piece->ownedByPlayer) {
         for (Piece * p : playerPieces) {
@@ -108,8 +122,10 @@ bool GameInstance::pieceExists(Piece * piece) {
     return false;
 }
 
-// Function to add a piece from the game instance to a tile on the board by setting that pieces pointer to the 
-// occupyingPiece value of the tile. Used at beginning of game instance.
+bool GameInstance::takeTurn() {
+
+}
+
 bool GameInstance::addPiece(Piece * piece, int x, int y) {
     if (x < 0 || y < 0 || x >= boardWidth || y >= boardHeight) {
         std::cout << "Fail, coordinates out of bounds" << std::endl;
@@ -123,13 +139,18 @@ bool GameInstance::addPiece(Piece * piece, int x, int y) {
 
     Tile * tile = getTile(x, y);
     if (tile->occupyingPiece != nullptr) {
+        std::cout << "Fail, tile already occupied" << std::endl;
         return false;
     } // Fail condition 3, tile occupied
+    if (tile->terrain == TerrainType::Water) {
+        std::cout << "Fail, can't place pieces on water tiles" << std::endl;
+        return false;
+    } // Fail condition 4, tile invalid
+
     tile->occupyingPiece = piece;
     return true;
 }
 
-// Quick function to get the tile a piece is on, as pieces don't belong to tiles.
 Tile * GameInstance::getPieceTile(Piece * piece) {
     for (Tile &t : board) {
         if (t.occupyingPiece == piece) {
@@ -139,18 +160,19 @@ Tile * GameInstance::getPieceTile(Piece * piece) {
     return nullptr;
 }
 
-// This function creates an array of valid move targets for a passed piece object It's going to be a particularly complicated piece of code, so prepare for a lot of comments
+// This function creates an array of valid move structs for a passed piece object 
+// It's going to be a particularly complicated piece of code, so prepare for a lot of comments
 std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
     Tile * currentTile = getPieceTile(piece);    
 
     int cardinalMax = piece->maxCardinal;
     int diagonalMax = piece->maxDiagonal; 
-    int relativeStrength = piece->strength; // These will be modified by runes and terrain, but are the base value for now
+    int relativeStrength = piece->strength; 
 
     std::vector<Move> validTiles; // validTiles is the vector we'll return
-    validTiles.reserve((cardinalMax * 4) + (diagonalMax * 4)); // I could write a ton of logic to get this to work with the inifinite movement pieces, but fuck that shit, it can be massive in those instances
+    validTiles.reserve((cardinalMax * 4) + (diagonalMax * 4)); 
 
-// We're doing linear algebra, we need an array of arrays. This is some C shit, baby! 
+// An array of vectors representing each possible direction of movement, used to code invariant below  
     int vectors[8][2] = {
         { 1, 0}, // Right
         {-1, 0}, // Left
@@ -170,9 +192,8 @@ std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
         for (int j = 1; (i < 4) ? j <= cardinalEval : j <= diagonalEval; j++) { 
         // j iterates through tiles on that vector. The ternary operator in the middle of this loop determines if the number of tiles iterated through is limited by the cardinalEval or diagonalEval value, corresponding with the array of vectors. 
 
-            Tile * checkTile = getTile(currentTile->x + (vectors[i][0]*j), currentTile->y + (vectors[i][1]*j)); // The tile being checked. Because linear algebra, works in all directions
-
-            if (!checkTile) break; // Breaks loop if tile doesn't exist
+            Tile * checkTile = getTile(currentTile->x + (vectors[i][0]*j), currentTile->y + (vectors[i][1]*j)); // The tile being checked 
+            if (!checkTile) break; // Fail case if tile doesn't exist
             
             // Terrain Logic Here
             int relativeToughnessMod = 0;
@@ -233,10 +254,12 @@ std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
             }
 
             if ((i < 4) ? j > cardinalEval : j > diagonalEval) break; // If terrain rules caused j to exceed the move limit, break 
-            if (stopMove == true) break; //If any terrain rules trigger this, break the loop
+            if (stopMove == true) break; // Had to use this bool because breaks don't work in switches and I don't like massive if statements
 
-            if (checkTile->occupyingPiece) { // Now logic for if the tile is occupied
-                if (checkTile->occupyingPiece->ownedByPlayer == piece->ownedByPlayer) { // If it's friendly, check if we can move through it.
+            // Now logic for if the tile is occupied
+            if (checkTile->occupyingPiece) { 
+                // If it's friendly, check if we can move through it.
+                if (checkTile->occupyingPiece->ownedByPlayer == piece->ownedByPlayer) { 
                     if (piece->canMoveThroughPieces) {
                         continue;
                     } else {
@@ -252,7 +275,7 @@ std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
                     break;
                 }
             } else {
-                validTiles.push_back(Move{currentTile, checkTile}); // If the tile isn't occupied, simply add it to the array
+                validTiles.push_back(Move{currentTile, checkTile}); // If the tile isn't occupied, simply add it to the vector
             }
         }
     }
@@ -277,13 +300,13 @@ bool GameInstance::movePiece(Piece * piece, int x, int y) {
     Tile * targetTile = getTile(x, y);
     std::vector<Move> validTiles = getValidMoves(piece);
     
-    // Debug Code
+    /* Debug Code
     std::cout << "DEBUG: Valid moves count = " << validTiles.size() << std::endl;
     std::cout << "DEBUG: Valid moves for piece: " << std::endl;
     for (Move vt : validTiles) {
         std::cout << "  (" << vt.to->x << ", " << vt.to->y << ") ptr=" << &vt << std::endl;
     }
-    //
+    */
 
     if (!currentTile) {
         std::cout << "Fail, piece not on board. Error in movePiece." << std::endl;
@@ -292,10 +315,10 @@ bool GameInstance::movePiece(Piece * piece, int x, int y) {
 
     for (int i = 0; i < validTiles.size(); i++) {
         if (targetTile == validTiles[i].to) {
-            // Debug Code
+            /* Debug Code
             std::cout << "DEBUG: Attempting to move piece to (" << x << ", " << y << ")" << std::endl;
             std::cout << "DEBUG: Piece currently at (" << currentTile->x << ", " << currentTile->y << ")" << std::endl;
-            //
+            */
             int index = 0;
             if (currentTile->occupyingPiece->ownedByPlayer) {
                 while (playerPieces[index] != currentTile->occupyingPiece) index++;

@@ -1,7 +1,17 @@
 #ifndef TYPES_HPP
 #define TYPES_HPP
 
-// All the different types of pieces, defines movement and base stats for a piece
+/*
+ * This header defines all the enums which are used across the code.
+ * The idea is that runes will operate over these enums.
+ *     - PieceType defines the basic stats of pieces and some terrian interactions
+ *     - PieceCategory defines terrain interactions primarily
+ *     - PieceMaterial determines the kinds of runes that can be applied to a piece
+ *     - TerrainType defines terrian rules
+ *     - BiomeType defines which TerrainTypes can exist on a board
+ *     - MissionType determines the objective of a GameInstance
+ *     - LeaderType determines the initial pieces of a RunInstance and the Leader Rule
+ */
 enum class PieceType {
     Light,
     Shield,
@@ -26,7 +36,6 @@ enum class PieceCategory {
     Special   // Commander, Wizard, Assasin, and Druid
 };
 
-// The materials each piece can be made of, works as a class for the rune logic system
 enum class PieceMaterial {
     Wood,
     Stone,
@@ -35,7 +44,6 @@ enum class PieceMaterial {
     Diamond
 };
 
-// Names for different kinds of terrain, not using ints because the logic for each terrain piece will be complicated
 enum class TerrainType {
     Field,
     Forest,

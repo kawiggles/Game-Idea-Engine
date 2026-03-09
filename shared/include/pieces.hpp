@@ -3,7 +3,7 @@
 
 #include "types.hpp"
 
-struct RuneSentence; // Forward declaration of Rune struct, which is in runes.hpp
+struct RuneSentence; // Forward declaration of Rune struct, which may or may not be used 
 
 struct RangedAttack {
     int maxRange;
@@ -12,6 +12,8 @@ struct RangedAttack {
     bool canShootThroughPieces;
 };
 
+// The piece struct simply contains a bunch of values which various rules call to evaluate game actions
+// The piece struct is the only structure which is used by multiple "layers" of the game
 struct Piece {
     // Core Attributes
     unsigned int id;
@@ -35,6 +37,7 @@ struct Piece {
     bool druidRunes = false;
 
     // Constructor Functions
+    // This piece index will go up forever, ensuring that every piece has a unique identifier by which it can be identified
     static unsigned int nextId() {
         static unsigned int counter = 0;
         return counter++;

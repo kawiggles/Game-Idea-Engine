@@ -3,6 +3,10 @@
 
 #include <vector>
 
+// This ugly piece of code is used to define the basic values for a piece struct upon it's initialization.
+// This is all it does. Is there a more efficient way to do this? Probably.
+// Do I care? No.
+// Also this makes it easy for me to adjust piece stats for balancing
 Piece::Piece(PieceMaterial m, PieceType t, bool o)
     : id(nextId()), material(m), type(t), ownedByPlayer(o) {
 
@@ -48,7 +52,7 @@ Piece::Piece(PieceMaterial m, PieceType t, bool o)
             category = PieceCategory::Cavalry;
             strength = 2;
             toughness = 1;
-            maxCardinal = 5; // Effectively Infinite
+            maxCardinal = 5; 
             maxDiagonal = 5;
             break;
         case PieceType::HCavalry:

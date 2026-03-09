@@ -3,9 +3,10 @@
 
 #include <vector>
 
+// Forward Declarations
+struct Move;
 struct Tile;
-struct Board;
 
-Tile * enemyAlgo1(std::vector<Tile *> possibleMoves, const Board &board);
+Tile * enemyAlgoBasic(std::vector<Move> possibleMoves, const std::vector<Tile> &board);
 
 #endif

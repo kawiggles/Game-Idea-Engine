@@ -9,6 +9,16 @@
 #include <queue>
 #include <algorithm>
 
+/*
+ * Tiles are the main structure referenced by GameInstance methods.
+ * Tiles hold three essential bits of informations:
+ *     - The (x, y) coordinate of the tile
+ *     - The terrain type of the tile
+ *     - A pointer to the piece occupying the tile
+ * Because of the way boards are constructed, any tile at coordiate (x, y) can be referenced by using the board vector index x * boardWidth + y
+ * getRandomTerrain determines the terrain value of a tile by refrencing an associated perlin noise map and GameInstance biome
+ * generateRoad uses an A* search algorithm to generate a vector of tiles which are converted to the road terrain type in makeGame
+ */
 TerrainType getRandomTerrain(float noise, BiomeType biome) {
     switch (biome) {
         case BiomeType::Temperate:
@@ -52,16 +62,19 @@ TerrainType getRandomTerrain(float noise, BiomeType biome) {
 
 std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<Tile> &board, int width, int height) {
     std::cout << "Starting A* search algorithm" << std::endl;
-    // Utility functions
+    // Utility lambda functions:
+    // copy of getTile because the board is not generated yet
     auto getTileId = [width](Tile *tile) { 
         return tile->x + width * tile->y; 
     };
-
-    auto h = [endTile](Tile * a) { // Lambda function for h 
+    
+    // Manhattan distance heuristic function h(x) 
+    auto h = [endTile](Tile * a) { 
         return std::abs(endTile->x - a->x) + std::abs(endTile->y - a->y);
     };
 
-    auto getCost = [](TerrainType terrain) { // gScore
+    // Cost function, g(x)
+    auto getCost = [](TerrainType terrain) {
         switch(terrain) {
             case TerrainType::Field:    return 1;
             case TerrainType::Forest:   return 3;
@@ -73,6 +86,7 @@ std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<T
         }
     };
 
+    // Get's all cardinally neighboring tiles by index
     auto getNeighbors = [width, height] (Tile &tile) {
         std::vector<int> neighbors;
         int vectors[4][2] = { { 1, 0},
@@ -89,26 +103,25 @@ std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<T
         return neighbors;
     };
 
-    // A* Search to find road pathing
+    // A* Search Algorithm, comments detail associated pseudocode from wikipedia (thank's wikipedia)
     int startTileId = getTileId(startTile);
 
     std::unordered_map<int, int> closedList; // cameFrom := an empty map
     std::unordered_map<int, int> gScore; // gScore := map with default value of Infinity
-                                          // maps TileId to gScore
     gScore[startTileId] = 0; // gScore[start] := 0
 
     std::unordered_map<int, int> fScore; // fScore := map with default value of Infinit
-                                          // maps TileId to fScore
     fScore[startTileId] = h(startTile); // fScore[start] := h(start)
     
     auto compare = [&fScore](int a, int b) { // Lambda function to determine node priority
         return fScore[a] > fScore[b]; // cursed af
-    };
+    }; // It needs to be here because fScore has to be declared first
 
-    std::priority_queue<int, std::vector<int>, decltype(compare)> openSet(compare); // openSet := {start}
+    // This is also out of order because compare is needed to define a min sort priority queue, these are the only things "out of order"
+    std::priority_queue<int, std::vector<int>, decltype(compare)> openSet(compare); 
     std::vector<int> checkSet; // for checking contents of openSet
 
-    openSet.push(startTileId);
+    openSet.push(startTileId); // openSet := {start}
     checkSet.push_back(startTileId);
     
     std::cout << "Algorithm initiated at (" << startTile->x+1 << ", " << startTile->y+1 << ")." << std::endl;

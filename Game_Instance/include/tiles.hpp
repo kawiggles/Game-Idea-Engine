@@ -6,7 +6,9 @@
 #include <string>
 #include <vector>
 
-// Objects:
+// See tiles.cpp for how tiles are constructed on a board for a Game Instance
+
+// Structures
 struct Piece; // Forward declaration of Piece struct, which is in pieces.hpp
 
 struct Tile {
@@ -26,7 +28,7 @@ TerrainType getRandomTerrain(float noise, BiomeType biome);
 // Function to generate a road on a board.
 std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<Tile> &board, int width, int height);
 
-// Function to get a terminal symbol for a tile object
+// Function to get a terminal symbol for a tile object, used by the printboard functions
 std::string getTileSymbol(const Tile &tile);
 
 #endif

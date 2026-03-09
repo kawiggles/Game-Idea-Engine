@@ -66,3 +66,8 @@ void printValidTilesBoard(std::vector<Tile> &board, std::vector<Move> moves, int
         std::cout << std::endl;
     }
 }
+
+void setupGame(GameInstance &game) {
+
+}
+
