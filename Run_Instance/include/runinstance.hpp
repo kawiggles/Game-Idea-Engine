@@ -13,18 +13,18 @@ struct Piece;
 class RunInstance {
     public:
         // Constructor
-        RunInstance(Map oldMap, Leader leader);
+        RunInstance(Map oldMap, LeaderType leader);
 
         // Public Members
         int seed;
-        Leader leader;
+        LeaderType leader;
         Map map;
-        std::vector<Piece> runPieces;
+        std::vector<Piece *> runPieces;
         std::vector<GameInstance> gameInstances;
 
         // Public Methods
         std::vector<GameInstance> generateGames();
-        std::vector<Piece> getInitialPieces();
+        std::vector<Piece *> getInitialPieces();
 };
 
 #endif

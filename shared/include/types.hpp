@@ -29,8 +29,8 @@ enum class PieceCategory {
 // The materials each piece can be made of, works as a class for the rune logic system
 enum class PieceMaterial {
     Wood,
+    Stone,
     Iron,
-    Silver,
     Gold,
     Diamond
 };
@@ -63,8 +63,8 @@ enum class MissionType {
     FillerMission
 };
 
-enum class Leader {
-    Standard
+enum class LeaderType {
+    Scout
 };
 
 #endif

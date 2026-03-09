@@ -2,10 +2,9 @@
 #define TILES_HPP
 
 #include "types.hpp"
-#include "boards.hpp"
 
 #include <string>
-#include <cstdlib>
+#include <vector>
 
 // Objects:
 struct Piece; // Forward declaration of Piece struct, which is in pieces.hpp
@@ -24,11 +23,8 @@ struct Tile {
 // Function to randomly generate a terrain type for a tile, will be updated later for perlin noise
 TerrainType getRandomTerrain(float noise, BiomeType biome);
 
-// Function to get tile pointer before board for GameInstance has been generated
-std::vector<Tile *> getNeighbors(Tile *tile, Board &board);
-
 // Function to generate a road on a board.
-std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, Board &board);
+std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<Tile> &board, int width, int height);
 
 // Function to get a terminal symbol for a tile object
 std::string getTileSymbol(const Tile &tile);

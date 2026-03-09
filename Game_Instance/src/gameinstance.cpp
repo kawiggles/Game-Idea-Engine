@@ -1,8 +1,8 @@
 #include "gameinstance.hpp"
-#include "boards.hpp"
 #include "pieces.hpp"
 #include "tiles.hpp"
 #include "types.hpp"
+#include "PerlinNoise.hpp"
 
 #include <iostream>
 #include <vector>
@@ -14,7 +14,7 @@ GameInstance::GameInstance(unsigned int seed, BiomeType biome, MissionType missi
     this->mission = mission;
     this->octave = octave;
     this->seed = seed;
-    road = hasRoad;
+    this->hasRoad = hasRoad;
 
     // Random width and height
     std::mt19937 gen(seed);
@@ -24,8 +24,59 @@ GameInstance::GameInstance(unsigned int seed, BiomeType biome, MissionType missi
 }
 
 // This function actually initalizes the game instance, taking values from the constructor to generate a board
-void GameInstance::makeGame(std::vector<Piece> runPieces, std::vector<Piece> enemyPieces) {
-    board = makeBoard(GameInstance::boardWidth, GameInstance::boardHeight, GameInstance::seed, GameInstance::octave, GameInstance::biome, GameInstance::mission, GameInstance::road);
+void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *> enemyPieces) {
+    std::cout << "Generating game instance..." <<std::endl;
+    std::cout << "Generating board of dimensions " << boardWidth << " by " << boardHeight << "." <<std::endl;
+    std::vector<Tile> board;
+    board.reserve(boardWidth * boardHeight); // Allocate memory space for vector equal to area of board
+    
+    const siv::PerlinNoise noiseMap{ seed }; // Generate perlin noise map from seed
+
+    for (int y = 0; y < boardHeight; y++) {
+        for (int x = 0; x < boardWidth; x++) {
+            // (x, y) coordinates are normalized in order to account for perlin noise frequency
+            float nx = (float)x / boardWidth;
+            float ny = (float)y / boardHeight;
+            float noiseValue = noiseMap.octave2D_01((nx * 4.0f), (ny * 4.0f), octave); // Get noise value depending on normalized (x, y) and octave 
+
+            board.push_back(Tile{x, y, getRandomTerrain(noiseValue, biome), nullptr});
+            // (x, y), terrain type, and null pointer representing no occupying piece
+        }
+    }
+    std::cout << "Base board generated" << std::endl;
+
+    if (hasRoad) {
+        std::cout << "Generating road." << std::endl;
+        Tile * startRoad;
+        Tile * endRoad;
+        for (int i = 0; i < boardWidth; i++) {
+            Tile * currentTile = &board[i];
+            if (currentTile->terrain == TerrainType::Field || currentTile->terrain == TerrainType::Forest) {
+                startRoad = currentTile;
+                break;
+            }
+        }
+        
+        for (int i = boardWidth; i >= 0; i--) {
+            Tile * currentTile = &board[i * (boardHeight-1) + (boardWidth-1)];
+            if (currentTile->terrain == TerrainType::Field || currentTile->terrain == TerrainType::Forest) {
+                endRoad = currentTile;
+                break;
+            }
+        }
+
+        std::vector<Tile *> road;
+        if (startRoad != nullptr && endRoad != nullptr) road = generateRoad(startRoad, endRoad, board, boardWidth, boardHeight);
+        for (Tile * tile : road) {
+            if (tile != nullptr) {
+                tile->terrain = TerrainType::Road;
+            }
+        }
+        std::cout << "Road generated." << std::endl;
+    }
+
+    std::cout << "Copying board and pieces to game instance." << std::endl;
+    this->board = std::move(board);
     this->playerPieces = runPieces; 
     this->enemyPieces = enemyPieces;
 }
@@ -33,23 +84,23 @@ void GameInstance::makeGame(std::vector<Piece> runPieces, std::vector<Piece> ene
 // Widely used function to get a tile from an (x, y) coordinate
 Tile * GameInstance::getTile(int x, int y) {
     // Return nullptr if no tile is found at the given coordinates
-    if (x < 0 || x >= board.width || y < 0 || y >= board.height) {
+    if (x < 0 || x >= boardWidth || y < 0 || y >= boardHeight) {
         return nullptr;
     }
-    return &board.tiles[(y * board.width) + x];
+    return &board[(y * boardWidth) + x];
 }
 
 // Widely used function to check if a piece exists in a game instance
 bool GameInstance::pieceExists(Piece * piece) {
     if (piece->ownedByPlayer) {
-        for (Piece &p : playerPieces) {
-            if (&p == piece) {
+        for (Piece * p : playerPieces) {
+            if (p == piece) {
                 return true;
             }
         }
     } else {
-        for (Piece &p : enemyPieces) {
-            if (&p == piece) {
+        for (Piece * p : enemyPieces) {
+            if (p == piece) {
                 return true;
             }
         }
@@ -60,7 +111,7 @@ bool GameInstance::pieceExists(Piece * piece) {
 // Function to add a piece from the game instance to a tile on the board by setting that pieces pointer to the 
 // occupyingPiece value of the tile. Used at beginning of game instance.
 bool GameInstance::addPiece(Piece * piece, int x, int y) {
-    if (x < 0 || y < 0 || x >= board.width || y >= board.height) {
+    if (x < 0 || y < 0 || x >= boardWidth || y >= boardHeight) {
         std::cout << "Fail, coordinates out of bounds" << std::endl;
         return false; // Fail condition 1, out of bounds
     }
@@ -80,7 +131,7 @@ bool GameInstance::addPiece(Piece * piece, int x, int y) {
 
 // Quick function to get the tile a piece is on, as pieces don't belong to tiles.
 Tile * GameInstance::getPieceTile(Piece * piece) {
-    for (Tile &t : board.tiles) {
+    for (Tile &t : board) {
         if (t.occupyingPiece == piece) {
             return &t;
         }
@@ -89,14 +140,14 @@ Tile * GameInstance::getPieceTile(Piece * piece) {
 }
 
 // This function creates an array of valid move targets for a passed piece object It's going to be a particularly complicated piece of code, so prepare for a lot of comments
-std::vector<Tile *> GameInstance::getValidMoves(Piece * piece) {
+std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
     Tile * currentTile = getPieceTile(piece);    
 
     int cardinalMax = piece->maxCardinal;
     int diagonalMax = piece->maxDiagonal; 
     int relativeStrength = piece->strength; // These will be modified by runes and terrain, but are the base value for now
 
-    std::vector<Tile *> validTiles; // validTiles is the vector we'll return
+    std::vector<Move> validTiles; // validTiles is the vector we'll return
     validTiles.reserve((cardinalMax * 4) + (diagonalMax * 4)); // I could write a ton of logic to get this to work with the inifinite movement pieces, but fuck that shit, it can be massive in those instances
 
 // We're doing linear algebra, we need an array of arrays. This is some C shit, baby! 
@@ -195,13 +246,13 @@ std::vector<Tile *> GameInstance::getValidMoves(Piece * piece) {
                     int relativeToughness = checkTile->occupyingPiece->toughness + relativeToughnessMod; // Like strength, will be altered by terrain and runes later
 
                     if (relativeStrength + relativeStrengthMod >= relativeToughness) {
-                        validTiles.push_back(checkTile);
+                        validTiles.push_back(Move{currentTile, checkTile});
                         break;
                     }
                     break;
                 }
             } else {
-                validTiles.push_back(checkTile); // If the tile isn't occupied, simply add it to the array
+                validTiles.push_back(Move{currentTile, checkTile}); // If the tile isn't occupied, simply add it to the array
             }
         }
     }
@@ -212,7 +263,7 @@ std::vector<Tile *> GameInstance::getValidMoves(Piece * piece) {
 
 // Function to move a piece from one tile to another, provided the checks of getValidMoves and pieceExists are passed. Also allows for the "capture" of pieces 
 bool GameInstance::movePiece(Piece * piece, int x, int y) {
-    if (x < 0 || y < 0 || x >= board.width || y >= board.height) {
+    if (x < 0 || y < 0 || x >= boardWidth || y >= boardHeight) {
         std::cout << "Fail, coordinates out of bounds. Error in movePiece." << std::endl;
         return false; // Fail condition 1, out of bounds
     }
@@ -224,15 +275,15 @@ bool GameInstance::movePiece(Piece * piece, int x, int y) {
 
     Tile * currentTile = getPieceTile(piece);
     Tile * targetTile = getTile(x, y);
-    std::vector<Tile *> validTiles = getValidMoves(piece);
+    std::vector<Move> validTiles = getValidMoves(piece);
     
-    /* Debug Code
+    // Debug Code
     std::cout << "DEBUG: Valid moves count = " << validTiles.size() << std::endl;
     std::cout << "DEBUG: Valid moves for piece: " << std::endl;
-    for (Tile* vt : validTiles) {
-        std::cout << "  (" << vt->x << ", " << vt->y << ") ptr=" << vt << std::endl;
+    for (Move vt : validTiles) {
+        std::cout << "  (" << vt.to->x << ", " << vt.to->y << ") ptr=" << &vt << std::endl;
     }
-    */
+    //
 
     if (!currentTile) {
         std::cout << "Fail, piece not on board. Error in movePiece." << std::endl;
@@ -240,18 +291,17 @@ bool GameInstance::movePiece(Piece * piece, int x, int y) {
     }
 
     for (int i = 0; i < validTiles.size(); i++) {
-        if (targetTile == validTiles[i]) {
-            /* Debug Code
+        if (targetTile == validTiles[i].to) {
+            // Debug Code
             std::cout << "DEBUG: Attempting to move piece to (" << x << ", " << y << ")" << std::endl;
             std::cout << "DEBUG: Piece currently at (" << currentTile->x << ", " << currentTile->y << ")" << std::endl;
-            */
+            //
+            int index = 0;
             if (currentTile->occupyingPiece->ownedByPlayer) {
-                int index;
-                while (&playerPieces[index] != currentTile->occupyingPiece) index++;
+                while (playerPieces[index] != currentTile->occupyingPiece) index++;
                 playerPieces.erase(playerPieces.begin() + index);
             } else {
-                int index;
-                while (&enemyPieces[index] != currentTile->occupyingPiece) index++;
+                while (enemyPieces[index] != currentTile->occupyingPiece) index++;
                 enemyPieces.erase(enemyPieces.begin() + index);
             }
             currentTile->occupyingPiece = nullptr;

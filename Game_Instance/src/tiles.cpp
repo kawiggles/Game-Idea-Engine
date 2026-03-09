@@ -1,10 +1,10 @@
 #include "tiles.hpp"
 #include "types.hpp"
-#include "boards.hpp"
 #include "pieces.hpp"
 
 #include <cstdlib>
 #include <iostream>
+#include <vector>
 #include <unordered_map>
 #include <queue>
 #include <algorithm>
@@ -50,11 +50,11 @@ TerrainType getRandomTerrain(float noise, BiomeType biome) {
     }
 }
 
-std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, Board &board) {
+std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<Tile> &board, int width, int height) {
     std::cout << "Starting A* search algorithm" << std::endl;
     // Utility functions
-    auto getTileId = [&board](Tile *tile) { 
-        return tile->x + board.width * tile->y; 
+    auto getTileId = [width](Tile *tile) { 
+        return tile->x + width * tile->y; 
     };
 
     auto h = [endTile](Tile * a) { // Lambda function for h 
@@ -73,17 +73,17 @@ std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, Board &board)
         }
     };
 
-    auto getNeighbors = [&board] (Tile *tile) {
+    auto getNeighbors = [width, height] (Tile &tile) {
         std::vector<int> neighbors;
         int vectors[4][2] = { { 1, 0},
                               { 0, 1},
                               {-1, 0},
                               { 0,-1} };
         for (int i = 0; i < 4; i++) {
-            int nx = tile->x + vectors[i][0];
-            int ny = tile->y + vectors[i][1];
-            if (nx >= 0 && nx < board.width && ny >= 0 && ny < board.height) {
-                neighbors.push_back(tile->x + vectors[i][0] + board.width * (tile->y + vectors[i][1]));
+            int nx = tile.x + vectors[i][0];
+            int ny = tile.y + vectors[i][1];
+            if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                neighbors.push_back(tile.x + vectors[i][0] + width * (tile.y + vectors[i][1]));
             }
         }
         return neighbors;
@@ -120,11 +120,11 @@ std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, Board &board)
         if (current == getTileId(endTile)) { // if current = goal 
             std::cout << "Road path found, generating path vector." << std::endl;
             std::vector<Tile *> path;
-            path.push_back(&board.tiles[current]); // total_path := {current}
+            path.push_back(&board[current]); // total_path := {current}
 
             while (closedList.count(current) == 1) { // while current in cameFrom.Keys:
                 current = closedList[current]; // current := cameFrom[current]
-                path.push_back(&board.tiles[current]); // total_path.prepend(current)
+                path.push_back(&board[current]); // total_path.prepend(current)
             }
             return path; // return total_path  
         }        
@@ -132,13 +132,13 @@ std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, Board &board)
         openSet.pop(); // openSet.Remove(current)
         checkSet.erase(find(checkSet.begin(), checkSet.end(), current)); // remove current from the check set
         
-        std::vector<int> neighbors = getNeighbors(&board.tiles[current]);
+        std::vector<int> neighbors = getNeighbors(board[current]);
         for (int i = 0; i < neighbors.size(); i++) { // for each neighbor of current
-            int tenativeG = gScore[current] + getCost(board.tiles[neighbors[i]].terrain); // tenative_gScore := gScore[current] + d(current, neighbor) 
+            int tenativeG = gScore[current] + getCost(board[neighbors[i]].terrain); // tenative_gScore := gScore[current] + d(current, neighbor) 
             if (gScore.find(neighbors[i]) == gScore.end() || tenativeG < gScore[neighbors[i]]) { // if tenative_gScore > gScore[neighbor]
                 closedList[neighbors[i]] = current; // cameFrom[neighbor] := current
                 gScore[neighbors[i]] = tenativeG; // gScore[neighbor] := tenative_gScore
-                fScore[neighbors[i]] = tenativeG + h(&board.tiles[neighbors[i]]); // fScore[neighbor] := tenative_gScore + h(neighbor)
+                fScore[neighbors[i]] = tenativeG + h(&board[neighbors[i]]); // fScore[neighbor] := tenative_gScore + h(neighbor)
                 
                 if (find(checkSet.begin(), checkSet.end(), neighbors[i]) == checkSet.end()) { // if neighbor not in openSet
                     openSet.push(neighbors[i]); // openSet.add(neighbor)
@@ -170,8 +170,13 @@ std::string getTileSymbol(const Tile &tile) {
             case PieceType::LCavalry:  symbol = "L"; break;
             case PieceType::MCavalry:  symbol = "M"; break;
             case PieceType::HCavalry:  symbol = "H"; break;
-            case PieceType::Commander: symbol = "C"; break;
+            case PieceType::Catapult:  symbol = "T"; break;
+            case PieceType::Ballista:  symbol = "B"; break;
+            case PieceType::Chariot:   symbol = "C"; break;
+            case PieceType::Commander: symbol = "G"; break;
             case PieceType::Wizard:    symbol = "W"; break;
+            case PieceType::Assassin:  symbol = "X"; break;
+            case PieceType::Druid:     symbol = "D"; break;
         }
         
         // Color enemy pieces red
