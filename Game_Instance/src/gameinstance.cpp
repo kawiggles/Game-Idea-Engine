@@ -29,7 +29,7 @@
  * Then, takeTurn handles the turn by turn logic, which are repeated instances of movePiece.
  */
 
-GameInstance::GameInstance(unsigned int seed, BiomeType biome, MissionType mission, int octave, bool hasRoad) {
+GameInstance::GameInstance(unsigned long seed, BiomeType biome, MissionType mission, int octave, bool hasRoad) {
     this->biome = biome;
     this->mission = mission;
     this->octave = octave;
@@ -37,7 +37,7 @@ GameInstance::GameInstance(unsigned int seed, BiomeType biome, MissionType missi
     this->hasRoad = hasRoad;
 
     std::mt19937 gen(seed); // Random width and height
-    std::uniform_int_distribution<int> dis(8, 20);
+    std::uniform_int_distribution<int> dis(5, 10);
     boardHeight = dis(gen);
     boardWidth = dis(gen);
 }
@@ -69,21 +69,17 @@ void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *>
         std::cout << "Generating road." << std::endl;
         Tile * startRoad;
         Tile * endRoad;
-        for (int i = 0; i < boardWidth; i++) {
-            Tile * currentTile = &board[i];
-            if (currentTile->terrain == TerrainType::Field || currentTile->terrain == TerrainType::Forest) {
-                startRoad = currentTile;
-                break;
-            }
-        }
+        std::uniform_int_distribution<int> roadDis(0, boardWidth-1);
+
+        do {
+            int roadStartX = roadDis(gen);
+            startRoad = &board[roadStartX];
+        } while (startRoad->terrain != TerrainType::Field && startRoad->terrain != TerrainType::Forest);
         
-        for (int i = boardWidth; i >= 0; i--) {
-            Tile * currentTile = &board[i * (boardHeight-1) + (boardWidth-1)];
-            if (currentTile->terrain == TerrainType::Field || currentTile->terrain == TerrainType::Forest) {
-                endRoad = currentTile;
-                break;
-            }
-        }
+        do {
+            int roadStartX = roadDis(gen);
+            endRoad = &board[boardWidth * (boardHeight-1) + roadStartX];
+        } while (endRoad->terrain != TerrainType::Field && startRoad->terrain != TerrainType::Forest);
 
         std::vector<Tile *> road;
         if (startRoad != nullptr && endRoad != nullptr) road = generateRoad(startRoad, endRoad, board, boardWidth, boardHeight);
@@ -92,24 +88,24 @@ void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *>
                 tile->terrain = TerrainType::Road;
             }
         }
-        std::cout << "Road generated." << std::endl;
+        std::cout << "Road generated" << std::endl;
     }
 
     switch (mission) {
         case MissionType::HoldThePoint: {
-            std::cout << "Mission type is Hold the Point";
+            std::cout << "Mission type is Hold the Point" << std::endl;
             std::uniform_int_distribution<int> xDist(0, boardWidth);
-            std::uniform_int_distribution<int> yDist(0, boardHeight);
+            std::uniform_int_distribution<int> yDist(4, boardHeight-4);
             int objX = xDist(gen);
             int objY = yDist(gen);
-            board[objX * boardWidth + objY].terrain = TerrainType::Objective;
+            board[objY * boardWidth + objX].terrain = TerrainType::Objective;
             break;
         }
         default:
             std::cout << "Error, no mission type for the Game Instance" << std::endl;
     }
 
-    std::cout << "Copying board and pieces to game instance." << std::endl;
+    std::cout << "Copying board and pieces to game instance..." << std::endl;
     this->board = std::move(board);
     this->playerPieces = runPieces; 
     this->enemyPieces = enemyPieces;
@@ -264,6 +260,10 @@ std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
                     break;
                 case TerrainType::Tundra:
                     break;
+                case TerrainType::Objective:
+                    if (relativeStrength < 2) stopMove = true;
+                    relativeToughnessMod++;
+                    break;
             }
 
             if ((i < 4) ? j > cardinalEval : j > diagonalEval) break; // If terrain rules caused j to exceed the move limit, break 
@@ -332,12 +332,10 @@ bool GameInstance::movePiece(Piece * piece, Tile * target) {
             std::cout << "DEBUG: Piece currently at (" << currentTile->x << ", " << currentTile->y << ")" << std::endl;
             */
             int index = 0;
-            if (currentTile->occupyingPiece->ownedByPlayer) {
-                while (playerPieces[index] != currentTile->occupyingPiece) index++;
-                playerPieces.erase(playerPieces.begin() + index);
-            } else {
-                while (enemyPieces[index] != currentTile->occupyingPiece) index++;
-                enemyPieces.erase(enemyPieces.begin() + index);
+            if (target->occupyingPiece) {
+                auto &pieces = target->occupyingPiece->ownedByPlayer ? playerPieces : enemyPieces;
+                auto it = std::find(pieces.begin(), pieces.end(), target->occupyingPiece);
+                if (it != pieces.end()) pieces.erase(it);
             }
             currentTile->occupyingPiece = nullptr;
             target->occupyingPiece = piece;
@@ -351,11 +349,29 @@ bool GameInstance::movePiece(Piece * piece, Tile * target) {
     return false; // Fail condition 4, rare exception
 }
 
-bool GameInstance::isMissionComplete() {
+int GameInstance::isMissionComplete() {
     switch (mission) {
-        case MissionType::HoldThePoint:
-            break;
-        default: return false;
+        case MissionType::HoldThePoint: {
+            Tile * objective = nullptr;
+            for (Tile &tile : board) {
+                if (tile.terrain == TerrainType::Objective) objective = &tile;
+            }
+
+            if (objective->occupyingPiece == nullptr) {
+                playerHoldsObjective = false;
+                enemyHoldsObjective = false;
+            } else if (objective->occupyingPiece->ownedByPlayer) {
+                if (playerHoldsObjective) return 2;
+                playerHoldsObjective = true;
+                enemyHoldsObjective = false;
+            } else {
+                if (enemyHoldsObjective) return 3;
+                playerHoldsObjective = false;
+                enemyHoldsObjective = true;
+            }
+            return 1;
+        }
+        default: return 1;
     }
 }
 
@@ -375,7 +391,7 @@ int GameInstance::takePlayerTurn(Move move) {
     }
 
     if (!moveComplete) return 0;
-    return (isMissionComplete()) ? 2 : 1;
+    return isMissionComplete();
 }
 
 int GameInstance::takeEnemyTurn() {
@@ -385,13 +401,13 @@ int GameInstance::takeEnemyTurn() {
         allEnemyMoves.insert(allEnemyMoves.end(), pieceValidMoves.begin(), pieceValidMoves.end());
     }
     
-    Move move = enemyAlgoBasic(allEnemyMoves, board);
+    Move move = enemyAlgoRandom(allEnemyMoves, board);
 
     int turnStatus = 0;
     bool moveComplete = false;
     switch (move.type) {
         case MoveType::Move: 
-            std::cout << "Enemy attempting move" << std::endl;
+            std::cout << "Enemy attempting move from (" << move.from->x+1 << ", " << move.from->y+1 << ") to (" << move.to->x+1 << ", " << move.to->y+1 << ")" << std::endl;
             moveComplete = movePiece(move.from->occupyingPiece, move.to);
             break;
         case MoveType::Shoot:
@@ -402,5 +418,6 @@ int GameInstance::takeEnemyTurn() {
     }
 
     if (!moveComplete) return 0;
-    return (isMissionComplete()) ? 2 : 1;
+    return isMissionComplete();
 }
+

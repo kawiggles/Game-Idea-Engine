@@ -7,6 +7,6 @@
 struct Move;
 struct Tile;
 
-Move enemyAlgoBasic(std::vector<Move> possibleMoves, const std::vector<Tile> &board);
+Move enemyAlgoRandom(std::vector<Move> possibleMoves, const std::vector<Tile> &board);
 
 #endif

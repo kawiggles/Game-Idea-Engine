@@ -20,7 +20,7 @@ struct Move {
 class GameInstance {
     public:
         // Constructor
-        GameInstance(unsigned int seed, BiomeType biome, MissionType mission, int octave, bool hasRoad);
+        GameInstance(unsigned long seed, BiomeType biome, MissionType mission, int octave, bool hasRoad);
 
         // Public members of GameInstance,
         // Public because information will be displayed to player
@@ -36,19 +36,22 @@ class GameInstance {
         std::vector<Tile> board;
         std::vector<Piece *> playerPieces;
         std::vector<Piece *> enemyPieces;
-        unsigned int seed;
+        unsigned long seed;
+        int turnCount;
 
         // When a GameInstance is selected, makeGame actually generates the board
         void makeGame(std::vector<Piece *> runPieces, std::vector<Piece *> enemyPieces);
 
-        // The turn function, which alternates between the player turn and enemy turn
+        // The turn functions, which alternates between the player turn and enemy turn
         int takePlayerTurn(Move move);
         int takeEnemyTurn();
 
         // Function to check if a mission is complete
-        bool isMissionComplete();
+        int isMissionComplete();
+        bool playerHoldsObjective;
+        bool enemyHoldsObjective;
 
-        // Two methods to get tiles, one from an (x,y) coordinate, and another from a piece object.
+        // Two methods to get tiles, one from an (x,y) coordinate, and the other from a piece object.
         Tile * getTile(int x, int y);
         Tile * getPieceTile(Piece * piece);
 

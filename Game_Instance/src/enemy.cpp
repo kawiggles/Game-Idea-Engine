@@ -3,7 +3,12 @@
 #include "tiles.hpp"
 
 #include <vector>
+#include <random>
 
-Move enemyAlgoBasic(std::vector<Move> possibleMoves, const std::vector<Tile> &board) {
-
+Move enemyAlgoRandom(std::vector<Move> possibleMoves, const std::vector<Tile> &board) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> distrib(0, possibleMoves.size()-1);
+    int randomIndex = distrib(gen);
+    return possibleMoves[randomIndex];
 }
