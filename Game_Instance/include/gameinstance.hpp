@@ -20,7 +20,7 @@ struct Move {
 class GameInstance {
     public:
         // Constructor
-        GameInstance(unsigned long seed, BiomeType biome, MissionType mission, int octave, bool hasRoad);
+        GameInstance(unsigned int seed, BiomeType biome, MissionType mission, int octave, bool hasRoad);
 
         // Public members of GameInstance,
         // Public because information will be displayed to player
@@ -36,7 +36,7 @@ class GameInstance {
         std::vector<Tile> board;
         std::vector<Piece *> playerPieces;
         std::vector<Piece *> enemyPieces;
-        unsigned long seed;
+        unsigned int seed;
         int turnCount;
 
         // When a GameInstance is selected, makeGame actually generates the board

@@ -1,9 +1,8 @@
 #include "tiles.hpp"
 #include "types.hpp"
-#include "pieces.hpp"
 
 #include <cstdlib>
-#include <iostream>
+#include <ncurses.h>
 #include <vector>
 #include <unordered_map>
 #include <queue>
@@ -61,7 +60,7 @@ TerrainType getRandomTerrain(float noise, BiomeType biome) {
 }
 
 std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<Tile> &board, int width, int height) {
-    std::cout << "Starting A* search algorithm" << std::endl;
+    printw("Starting A* search algorithm\n");
     // Utility lambda functions:
     // copy of getTile because the board is not generated yet
     auto getTileId = [width](Tile *tile) { 
@@ -124,14 +123,14 @@ std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<T
     openSet.push(startTileId); // openSet := {start}
     checkSet.push_back(startTileId);
     
-    std::cout << "Algorithm initiated at (" << startTile->x+1 << ", " << startTile->y+1 << ")." << std::endl;
-    std::cout << "Algorithm target is (" << endTile->x+1 << ", " << endTile->y+1 << ")." << std::endl;
+    printw("Algorithm initiated at (%d, %d)\n", startTile->x+1, startTile->y+1);
+    printw("Algorithm target is (%d, %d)\n", endTile->x+1, endTile->y+1);
 
     while (!(openSet.empty())) { // while openSet is not empty
         int current = openSet.top(); // current := the node in openSet having the lowest fScore[] value
                                  // Because the openSet comp lambda sorts by lowest f, it will always be the top of openSet
         if (current == getTileId(endTile)) { // if current = goal 
-            std::cout << "Road path found, generating path vector." << std::endl;
+            printw("Road path found, generating path vector.\n");
             std::vector<Tile *> path;
             path.push_back(&board[current]); // total_path := {current}
 
@@ -162,62 +161,8 @@ std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<T
         }
 
     }
-    std::cout << "Algorithm failed." << std::endl;
+    printw("Algorithm failed.\n");
     std::vector<Tile *> failure = { nullptr };
     return failure;
 }
 
-std::string getTileSymbol(const Tile &tile) {
-    std::string symbol = " ";  // Default: empty space
-    std::string pieceColor = ""; // Default: no color
-    
-    if (tile.terrain == TerrainType::Water) return "\033[34m[~~]\033[0m"; // Water tiles can never hold pieces
-
-    if (tile.occupyingPiece) {
-        // Determine piece letter
-        switch (tile.occupyingPiece->type) {
-            case PieceType::Light:     symbol = "P"; break;
-            case PieceType::Shield:    symbol = "S"; break;
-            case PieceType::Elite:     symbol = "E"; break;
-            case PieceType::Archer:    symbol = "A"; break;
-            case PieceType::LCavalry:  symbol = "L"; break;
-            case PieceType::MCavalry:  symbol = "M"; break;
-            case PieceType::HCavalry:  symbol = "H"; break;
-            case PieceType::Catapult:  symbol = "T"; break;
-            case PieceType::Ballista:  symbol = "B"; break;
-            case PieceType::Chariot:   symbol = "C"; break;
-            case PieceType::Commander: symbol = "G"; break;
-            case PieceType::Wizard:    symbol = "W"; break;
-            case PieceType::Assassin:  symbol = "X"; break;
-            case PieceType::Druid:     symbol = "D"; break;
-        }
-        
-        // Color enemy pieces red
-        if (!tile.occupyingPiece->ownedByPlayer) {
-            pieceColor = "\033[31m";  // Red
-        }
-    }
-    
-    // Get terrain bracket color
-    std::string bracketColor;
-    switch (tile.terrain) {
-        case TerrainType::Field:    bracketColor = "\033[93m"; break;  // Yellow
-        case TerrainType::Forest:   bracketColor = "\033[92m"; break;  // Green
-        case TerrainType::Mountain: bracketColor = "\033[35m"; break;  // Purple
-        case TerrainType::Road:     bracketColor = "\033[91m"; break;  // HI Red
-        case TerrainType::Desert:   bracketColor = "\033[33m"; break;  // HI Yellow
-        case TerrainType::Jungle:   bracketColor = "\033[32m"; break;  // HI Green
-        case TerrainType::Peak:     bracketColor = "\033[30m"; break;  // Black
-        // Arctic Tiles
-        case TerrainType::IceField: bracketColor = "\033[36m"; break;  // Cyan
-        case TerrainType::SnowField:bracketColor = "\033[37m"; break;  // White
-        case TerrainType::Tundra:   bracketColor = "\033[32m"; break;  // Green again, but it's fine because it replaces forests
-        // Mission Tiles
-        case TerrainType::Objective:bracketColor = "\033[94m"; break;  // HI Blue
-    }
-    
-    // Construct final symbol
-    return bracketColor + "[ " + "\033[39m" + 
-           pieceColor + symbol + "\033[39m" + 
-           bracketColor + "]" + "\033[39m";
-}

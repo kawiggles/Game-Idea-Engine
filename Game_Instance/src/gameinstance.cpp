@@ -5,7 +5,7 @@
 #include "PerlinNoise.hpp"
 #include "enemy.hpp"
 
-#include <iostream>
+#include <ncurses.h>
 #include <vector>
 #include <random>
 
@@ -29,7 +29,7 @@
  * Then, takeTurn handles the turn by turn logic, which are repeated instances of movePiece.
  */
 
-GameInstance::GameInstance(unsigned long seed, BiomeType biome, MissionType mission, int octave, bool hasRoad) {
+GameInstance::GameInstance(unsigned int seed, BiomeType biome, MissionType mission, int octave, bool hasRoad) {
     this->biome = biome;
     this->mission = mission;
     this->octave = octave;
@@ -43,8 +43,8 @@ GameInstance::GameInstance(unsigned long seed, BiomeType biome, MissionType miss
 }
 
 void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *> enemyPieces) {
-    std::cout << "Generating game instance..." <<std::endl;
-    std::cout << "Generating board of dimensions " << boardWidth << " by " << boardHeight << "." <<std::endl;
+    printw("Generating game instance...\n");
+    printw("Generating board of dimensions %d by %d.\n", boardWidth, boardHeight);
     std::vector<Tile> board;
     board.reserve(boardWidth * boardHeight); 
 
@@ -57,16 +57,16 @@ void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *>
             // (x, y) coordinates are normalized in order to account for perlin noise frequency
             float nx = (float)x / boardWidth;
             float ny = (float)y / boardHeight;
-            float noiseValue = noiseMap.octave2D_01((nx * 4.0f), (ny * 4.0f), octave); // Get noise value depending on normalized (x, y) and octave 
+            float noiseValue = noiseMap.octave2D_01((nx * 4.0f), (ny * 4.0f), octave);  
 
             board.push_back(Tile{x, y, getRandomTerrain(noiseValue, biome), nullptr});
             // (x, y), terrain type, and null pointer representing no occupying piece
         }
     }
-    std::cout << "Base board generated" << std::endl;
+    printw("Base board generated\n");
 
     if (hasRoad) {
-        std::cout << "Generating road." << std::endl;
+        printw("Generating road.\n");
         Tile * startRoad;
         Tile * endRoad;
         std::uniform_int_distribution<int> roadDis(0, boardWidth-1);
@@ -88,12 +88,12 @@ void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *>
                 tile->terrain = TerrainType::Road;
             }
         }
-        std::cout << "Road generated" << std::endl;
+        printw("Road generated\n");
     }
 
     switch (mission) {
         case MissionType::HoldThePoint: {
-            std::cout << "Mission type is Hold the Point" << std::endl;
+            printw("Mission type is Hold the Point\n");
             std::uniform_int_distribution<int> xDist(0, boardWidth);
             std::uniform_int_distribution<int> yDist(4, boardHeight-4);
             int objX = xDist(gen);
@@ -102,10 +102,10 @@ void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *>
             break;
         }
         default:
-            std::cout << "Error, no mission type for the Game Instance" << std::endl;
+            printw("Error, no mission type for the Game Instance\n");
     }
 
-    std::cout << "Copying board and pieces to game instance..." << std::endl;
+    printw("Copying board and pieces to game instance...\n");
     this->board = std::move(board);
     this->playerPieces = runPieces; 
     this->enemyPieces = enemyPieces;
@@ -137,22 +137,22 @@ bool GameInstance::pieceExists(Piece * piece) {
 
 bool GameInstance::addPiece(Piece * piece, int x, int y) {
     if (x < 0 || y < 0 || x >= boardWidth || y >= boardHeight) {
-        std::cout << "Fail, coordinates out of bounds" << std::endl;
+        printw("Fail, coordinates out of bounds\n");
         return false; // Fail condition 1, out of bounds
     }
     
     if (!pieceExists(piece)) {
-        std::cout << "Fail, piece not in game instance" << std::endl;
+        printw("Fail, piece not in game instance\n");
         return false; // Fail condition 2, piece not in game
     }
 
     Tile * tile = getTile(x, y);
     if (tile->occupyingPiece != nullptr) {
-        std::cout << "Fail, tile already occupied" << std::endl;
+        printw("Fail, tile already occupied\n");
         return false;
     } // Fail condition 3, tile occupied
     if (tile->terrain == TerrainType::Water) {
-        std::cout << "Fail, can't place pieces on water tiles" << std::endl;
+        printw("Fail, can't place pieces on water tiles\n");
         return false;
     } // Fail condition 4, tile invalid
 
@@ -170,7 +170,6 @@ Tile * GameInstance::getPieceTile(Piece * piece) {
 }
 
 // This function creates an array of valid move structs for a passed piece object 
-// It's going to be a particularly complicated piece of code, so prepare for a lot of comments
 std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
     Tile * currentTile = getPieceTile(piece);    
 
@@ -178,10 +177,9 @@ std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
     int diagonalMax = piece->maxDiagonal; 
     int relativeStrength = piece->strength; 
 
-    std::vector<Move> validTiles; // validTiles is the vector we'll return
+    std::vector<Move> validTiles;
     validTiles.reserve((cardinalMax * 4) + (diagonalMax * 4)); 
 
-// An array of vectors representing each possible direction of movement, used to code invariant below  
     int vectors[8][2] = {
         { 1, 0}, // Right
         {-1, 0}, // Left
@@ -193,15 +191,14 @@ std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
         {-1,-1}  // Left and Down
     };
 
-// We know there's only 8 vectors to loop through, so we can set the number of iterations manually 
-    for (int i = 0; i < 8; i++) { // i iterates through vectors
+    for (int i = 0; i < 8; i++) {
             bool stopMove = false;
             int cardinalEval = cardinalMax;
             int diagonalEval = diagonalMax;
         for (int j = 1; (i < 4) ? j <= cardinalEval : j <= diagonalEval; j++) { 
         // j iterates through tiles on that vector. The ternary operator in the middle of this loop determines if the number of tiles iterated through is limited by the cardinalEval or diagonalEval value, corresponding with the array of vectors. 
 
-            Tile * checkTile = getTile(currentTile->x + (vectors[i][0]*j), currentTile->y + (vectors[i][1]*j)); // The tile being checked 
+            Tile * checkTile = getTile(currentTile->x + (vectors[i][0]*j), currentTile->y + (vectors[i][1]*j));
             if (!checkTile) break; // Fail case if tile doesn't exist
             
             // Terrain Logic Here
@@ -214,7 +211,7 @@ std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
                 case TerrainType::Forest:
                     if ((piece->category == PieceCategory::Cavalry && 
                          piece->type != PieceType::LCavalry) || 
-                         piece->category == PieceCategory::Siege) (i < 4) ? cardinalEval-- : diagonalEval--; // Decrease movement by one
+                         piece->category == PieceCategory::Siege) (i < 4) ? cardinalEval-- : diagonalEval--;
                     relativeToughnessMod++;
                     break;
                 case TerrainType::Water:
@@ -266,20 +263,19 @@ std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
                     break;
             }
 
-            if ((i < 4) ? j > cardinalEval : j > diagonalEval) break; // If terrain rules caused j to exceed the move limit, break 
-            if (stopMove == true) break; // Had to use this bool because breaks don't work in switches and I don't like massive if statements
+            // Capture Logic Here
+            if ((i < 4) ? j > cardinalEval : j > diagonalEval) break;
+            if (stopMove == true) break;
 
-            // Now logic for if the tile is occupied
             if (checkTile->occupyingPiece) { 
-                // If it's friendly, check if we can move through it.
                 if (checkTile->occupyingPiece->ownedByPlayer == piece->ownedByPlayer) { 
                     if (piece->canMoveThroughPieces) {
                         continue;
                     } else {
                         break;
                     }
-                } else { // If it's not, we do a strength/toughness comparison
-                    int relativeToughness = checkTile->occupyingPiece->toughness + relativeToughnessMod; // Like strength, will be altered by terrain and runes later
+                } else {
+                    int relativeToughness = checkTile->occupyingPiece->toughness + relativeToughnessMod;
 
                     if (relativeStrength + relativeStrengthMod >= relativeToughness) {
                         validTiles.push_back(Move{MoveType::Move, currentTile, checkTile});
@@ -288,7 +284,7 @@ std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
                     break;
                 }
             } else {
-                validTiles.push_back(Move{MoveType::Move, currentTile, checkTile}); // If the tile isn't occupied, simply add it to the vector
+                validTiles.push_back(Move{MoveType::Move, currentTile, checkTile});
             }
         }
     }
@@ -300,37 +296,25 @@ std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
 // Function to move a piece from one tile to another, provided the checks of getValidMoves and pieceExists are passed. Also allows for the "capture" of pieces 
 bool GameInstance::movePiece(Piece * piece, Tile * target) {
     if (!target) {
-        std::cout << "Fail, target tile out of bounds" << std::endl;
+        printw("Fail, target tile out of bounds\n");
         return false; // Fail condition 1, out of bounds
     }
     
     if (!pieceExists(piece)) {
-        std::cout << "Fail, piece not in game instance" << std::endl;
+        printw("Fail, piece not in game instance\n");
         return false; // Fail condition 2, piece not in game
     }
 
     Tile * currentTile = getPieceTile(piece);
     std::vector<Move> validTiles = getValidMoves(piece);
-    
-    /* Debug Code
-    std::cout << "DEBUG: Valid moves count = " << validTiles.size() << std::endl;
-    std::cout << "DEBUG: Valid moves for piece: " << std::endl;
-    for (Move vt : validTiles) {
-        std::cout << "  (" << vt.to->x << ", " << vt.to->y << ") ptr=" << &vt << std::endl;
-    }
-    */
 
     if (!currentTile->occupyingPiece) {
-        std::cout << "Fail, piece not on board" << std::endl;
+        printw("Fail, piece not on board\n");
         return false; // Fail condition 3, piece not on board
     }
 
     for (int i = 0; i < validTiles.size(); i++) {
         if (target == validTiles[i].to) {
-            /* Debug Code
-            std::cout << "DEBUG: Attempting to move piece to (" << x << ", " << y << ")" << std::endl;
-            std::cout << "DEBUG: Piece currently at (" << currentTile->x << ", " << currentTile->y << ")" << std::endl;
-            */
             int index = 0;
             if (target->occupyingPiece) {
                 auto &pieces = target->occupyingPiece->ownedByPlayer ? playerPieces : enemyPieces;
@@ -339,13 +323,13 @@ bool GameInstance::movePiece(Piece * piece, Tile * target) {
             }
             currentTile->occupyingPiece = nullptr;
             target->occupyingPiece = piece;
-            std::cout << "Piece moved from (" << currentTile->x+1 << ", " << currentTile->y+1 << ") to (" << target->x+1 << ", " << target->y+1 << ")" << std::endl;
+            printw("Piece moved from (%d, %d) to (%d ,%d)\n", currentTile->x+1, currentTile->y+1, target->x+1, target->y+1);
             return true;
         }
     }
 
-    std::cout << "Fail, invalid move." << std::endl;
-    std::cout << "Target was: " << target << " at (" << target->x << ", " << target->y << ")" << std::endl; 
+    printw("Fail, invalid move.\n");
+    printw("Target was: (%d, %d)\n", target->x+1, target->y+1); 
     return false; // Fail condition 4, rare exception
 }
 
@@ -380,14 +364,14 @@ int GameInstance::takePlayerTurn(Move move) {
     bool moveComplete = false;
     switch (move.type) {
         case MoveType::Move: 
-            std::cout << "Attempting move" << std::endl;
+            printw("Attempting move\n");
             moveComplete = movePiece(move.from->occupyingPiece, move.to);
             break;
         case MoveType::Shoot:
-            std::cout << "Attempting to shoot" << std::endl;
+            printw("Attempting to shoot\n");
             break;
         default:
-            std::cout << "Error, move type not recognized" << std::endl;
+            printw("Error, move type not recognized\n");
     }
 
     if (!moveComplete) return 0;
@@ -407,17 +391,16 @@ int GameInstance::takeEnemyTurn() {
     bool moveComplete = false;
     switch (move.type) {
         case MoveType::Move: 
-            std::cout << "Enemy attempting move from (" << move.from->x+1 << ", " << move.from->y+1 << ") to (" << move.to->x+1 << ", " << move.to->y+1 << ")" << std::endl;
+            printw("Enemy attempting move from (%d, %d) to (%d, %d)\n", move.from->x+1, move.from->y+1, move.to->x+1, move.to->y+1);
             moveComplete = movePiece(move.from->occupyingPiece, move.to);
             break;
         case MoveType::Shoot:
-            std::cout << "Enemy attempting to shoot" << std::endl;
+            printw("Enemy attempting to shoot\n");
             break;
         default:
-            std::cout << "Error, enemy move type not recognized" << std::endl;
+            printw("Error, enemy move type not recognized\n");
     }
 
     if (!moveComplete) return 0;
     return isMissionComplete();
 }
-

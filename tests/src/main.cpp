@@ -4,30 +4,58 @@
 #include "gameinstance.hpp"
 #include "types.hpp"
 
-#include <iostream>
 #include <assert.h>
 #include <random>
+#include <ncurses.h>
 
 int main() {
-    std::cout << "Test Begin..." << std::endl;
-    int testSeed;
-    std::string seedInput;
-    std::cout << "Enter seed (leave blank for random): ";
-    std::getline(std::cin, seedInput);
+    initscr();
+    noecho();
+    cbreak();
+    keypad(stdscr, TRUE);
+    start_color();
+
+    printw("Starting Chess 2...\n");
+    unsigned int testSeed;
+    std::string seedInput = "";
+    printw("Enter seed (leave blank for random): ");
+    refresh();
+    int ch;
+    while ((ch = getch()) != '\n') {
+        if (ch == KEY_BACKSPACE || ch == 263) {
+            if (!seedInput.empty()) {
+                seedInput.pop_back();
+                int y, x;
+                getyx(stdscr, y, x);
+                mvprintw(y, x-1, " ");
+                move(y, x-1);
+                refresh();
+            }
+        } else if (ch >= '0' && ch <= '9') {
+            seedInput += (char)ch;
+            addch(ch);
+            refresh();
+        }
+    }
 
     if (seedInput.empty()) {
         std::random_device rd;
         testSeed = rd();
-        std::cout << "Seed: " << testSeed << std::endl;
+        printw("Seed: %u\n", testSeed);
     } else {
-        testSeed = stoul(seedInput);
+        try {
+            testSeed = stoul(seedInput);
+        } catch (...) {
+            std::random_device rd;
+            testSeed = rd();
+            printw("Seed: %u\n", testSeed);
+        }
     }
-    
 
     std::mt19937 gen(testSeed);
-    std::uniform_int_distribution<unsigned long> distribution;
-    unsigned long gameSeed = distribution(gen);
-    std::cout << "Game seed: " << gameSeed << std::endl;
+    std::uniform_int_distribution<unsigned int> distribution;
+    unsigned int gameSeed = distribution(gen);
+    printw("Game seed: %u\n", gameSeed);
 
     // Create arrays of test of pieces
     std::vector<Piece *> testPlayerPieces;
@@ -48,20 +76,25 @@ int main() {
     // Make a new game instance
     std::uniform_int_distribution<int> biomeDist(0, 4);
     BiomeType randomBiome = static_cast<BiomeType>(biomeDist(gen));
-    std::cout << "Biome: " << getBiomeType(randomBiome) << std::endl;
+    printw("Biome: %s\n", getBiomeType(randomBiome).c_str());
 
     std::uniform_int_distribution<int> octaveDist(1, 3);
     int randomOctave = octaveDist(gen);
-    std::cout << "Perlin noise octave: " << randomOctave << std::endl;
+    printw("Perlin noise octave: %d\n", randomOctave);
 
     std::uniform_int_distribution<int> roadDist(0, 1);
     bool roadBool = roadDist(gen);
-    if (roadBool) std::cout << "Board has road" << std::endl;
+    if (roadBool) printw("Board has road\n");
+
+    printw("Press Enter to generate game instance...\n");
+    getch();
+    refresh();
 
     GameInstance testGame(gameSeed, randomBiome, MissionType::HoldThePoint, randomOctave, roadBool);
     testGame.makeGame(testPlayerPieces, testEnemyPieces);
     setupGame(testGame);
     runGame(testGame, true);
-    // Moving pieces and reprinting board:
+
+    endwin();
     return 0;
 }

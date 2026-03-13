@@ -5,70 +5,86 @@
 #include <iostream>
 #include <unordered_set>
 #include <random>
+#include <ncurses.h>
+/*
+ * This is a temporary program which uses ncurses to represent the game state
+ * The first set of functions controls how ncurses windows are created and destroyed
+ * The second set returns string values for various object properties in the game
+ * The third set prints the board state of a given game instance
+ * Finally, the last functions control a test game instance
+ */ 
 
-/*  This is a complicated bit of code, so I'm explaining it here. board.tiles[] is a vector array, defined in boards.hpp. The two loops iterate through this array, using height and width (also defined in boards.hpp) to know when to end and begin new rows. The tile index, when given to the array board.tiles[] will return one tile struct. That tile struct is then passed through getTileSymbol, which takes a tile struct and returns a std::string object corresponding to the properties of the tile struct. That gets printed with std::cout and the index gets incremented.*/
-void printBoard(std::vector<Tile> &board, int width, int height) {
-    int tileIndex = 0;
-    std::cout << "    "; // Empty space at the start of coordinate numbering
-    for (int i = 0; i < width; i++) { // Column numbering
-        if (i < 9) {
-            std::cout << "[ " << i+1 << "]";
-        } else {
-            std::cout << "[" << i+1 << "]";
-        }
-    }
-    std::cout << std::endl;
-    for (int i = 0; i < height; i++) {
-        if (i < 9) {
-            std::cout << "[ " << i+1 << "]"; // Row numbering
-        } else {
-            std::cout << "[" << i+1 << "]";
-        }
+// Functions for controlling ncurses
+WINDOW * createNewWindow(int height, int width, int starty, int startx) {
+    WINDOW * newWindow = newwin(height, width, starty, startx);
+    box(newWindow, 0, 0);
+    wrefresh(newWindow);
 
-        for (int j = 0; j < width; j++) {
-            std::cout << "\033[49m" << getTileSymbol(board[tileIndex]) << "\033[0m";
-            tileIndex++;
-        }
-        std::cout << std::endl;
-    }
+    return newWindow;
 }
 
-/* This function essentially does the exact same thing, but also adds highlights for valid moves for a selected piece. It takes a vector of those valid moves as an additional input. */
-void printValidTilesBoard(std::vector<Tile> &board, std::vector<Move> moves, int width, int height) {
-    std::unordered_set<Tile *> moveSet(moves.size()); 
-    
-    for (int i = 0; i < moves.size(); i++) moveSet.insert(moves[i].to);
-    
-    int tileIndex = 0;
-    std::cout << "    ";
-    for (int i = 0; i < width; i++) { // Column numbering
-        if (i < 9) {
-            std::cout << "[ " << i+1 << "]";
-        } else {
-            std::cout << "[" << i+1 << "]";
-        }
-    }
-    std::cout << std::endl;
-    for (int i = 0; i < height; i++) {
-        if (i < 9) {
-            std::cout << "[ " << i+1 << "]"; // Row numbering
-        } else {
-            std::cout << "[" << i+1 << "]";
-        }
-
-        for (int j = 0; j < width; j++) {
-            
-            (moveSet.count(&board[tileIndex])) ? std::cout << "\033[47m" : std::cout << "\033[49m"; // If the current tile is in the set of possible moves, 47m background, else 49m background
-            std::cout << getTileSymbol(board[tileIndex]);
-            std::cout << "\033[0m";
-
-            tileIndex++;
-        }
-        std::cout << std::endl;
-    }
+void destroyWindow(WINDOW * window) {
+    wborder(window, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
+    wrefresh(window);
+    delwin(window);
 }
 
-std::string getPieceType(Piece * piece) {
+// String generating functions
+std::string getTileSymbol(const Tile &tile) {
+    std::string symbol = " ";  // Default: empty space
+    std::string pieceColor = ""; // Default: no color
+    
+    if (tile.occupyingPiece) {
+        // Determine piece letter
+        switch (tile.occupyingPiece->type) {
+            case PieceType::Light:     symbol = "P"; break;
+            case PieceType::Shield:    symbol = "S"; break;
+            case PieceType::Elite:     symbol = "E"; break;
+            case PieceType::Archer:    symbol = "A"; break;
+            case PieceType::LCavalry:  symbol = "L"; break;
+            case PieceType::MCavalry:  symbol = "M"; break;
+            case PieceType::HCavalry:  symbol = "H"; break;
+            case PieceType::Catapult:  symbol = "T"; break;
+            case PieceType::Ballista:  symbol = "B"; break;
+            case PieceType::Chariot:   symbol = "C"; break;
+            case PieceType::Commander: symbol = "G"; break;
+            case PieceType::Wizard:    symbol = "W"; break;
+            case PieceType::Assassin:  symbol = "X"; break;
+            case PieceType::Druid:     symbol = "D"; break;
+        }
+        
+        // Color enemy pieces red
+        if (!tile.occupyingPiece->ownedByPlayer) {
+            pieceColor = "";  // Red
+        }
+    }
+    
+    // Get terrain bracket color
+    std::string bracketColor;
+    switch (tile.terrain) {
+        case TerrainType::Water:    return "[~~]";
+        case TerrainType::Field:    bracketColor = ""; break;  // Yellow
+        case TerrainType::Forest:   bracketColor = ""; break;  // Green
+        case TerrainType::Mountain: bracketColor = ""; break;  // Purple
+        case TerrainType::Road:     bracketColor = ""; break;  // HI Red
+        case TerrainType::Desert:   bracketColor = ""; break;  // HI Yellow
+        case TerrainType::Jungle:   bracketColor = ""; break;  // HI Green
+        case TerrainType::Peak:     bracketColor = ""; break;  // Black
+        // Arctic Tiles
+        case TerrainType::IceField: bracketColor = ""; break;  // Cyan
+        case TerrainType::SnowField:bracketColor = ""; break;  // White
+        case TerrainType::Tundra:   bracketColor = ""; break;  // Green again, but it's fine because it replaces forests
+        // Mission Tiles
+        case TerrainType::Objective:bracketColor = ""; break;  // HI Blue
+    }
+    
+    // Construct final symbol
+    return bracketColor + "[ " + "" + 
+           pieceColor + symbol + "" + 
+           bracketColor + "]" + "";
+}
+
+std::string getPieceType(const Piece * piece) {
     switch(piece->type) {
         case PieceType::Light:      return "Light Infantry";
         case PieceType::Shield:     return "Shield Infantry";
@@ -88,7 +104,7 @@ std::string getPieceType(Piece * piece) {
     }
 }
 
-std::string getBiomeType(BiomeType biome) {
+std::string getBiomeType(const BiomeType biome) {
     switch (biome) {
         case BiomeType::Grassy:     return "Grassland";
         case BiomeType::Temperate:  return "Forest";
@@ -100,68 +116,181 @@ std::string getBiomeType(BiomeType biome) {
     }
 }
 
+// Functions for printing board state
+void printBoard(std::vector<Tile> &board, int width, int height, WINDOW * window) {
+    int tileIndex = 0;
+    wprintw(window, "    "); // Empty space at the start of coordinate numbering
+    for (int i = 0; i < width; i++) { // Column numbering
+        if (i < 9) {
+            wprintw(window, "[ %d]", i+1);
+        } else {
+            wprintw(window, "[%d]", i+1);
+        }
+    }
+    wprintw(window, "\n");;
+    for (int i = 0; i < height; i++) {
+        if (i < 9) {
+            wprintw(window, "[ %d]", i+1); // Row numbering
+        } else {
+            wprintw(window, "[%d]", i+1);
+        }
+
+        for (int j = 0; j < width; j++) {
+            wprintw(window, "%s", getTileSymbol(board[tileIndex]).c_str());
+            tileIndex++;
+        }
+        wprintw(window, "\n");
+    }
+    refresh();
+}
+
+void printValidTilesBoard(std::vector<Tile> &board, std::vector<Move> moves, int width, int height) {
+    std::unordered_set<Tile *> moveSet(moves.size()); 
+    
+    for (int i = 0; i < moves.size(); i++) moveSet.insert(moves[i].to);
+    
+    int tileIndex = 0;
+    printw("    ");
+    for (int i = 0; i < width; i++) { // Column numbering
+        if (i < 9) {
+            printw("[ %d]", i+1);
+        } else {
+            printw("[%d]", i+1);
+        }
+    }
+    printw("\n");
+    for (int i = 0; i < height; i++) {
+        if (i < 9) {
+            printw("[ %d]", i+1); // Row numbering
+        } else {
+            printw("[%d]", i+1);
+        }
+
+        for (int j = 0; j < width; j++) {
+            
+            (moveSet.count(&board[tileIndex])) ? printw("\033[47m") : printw("\033[49m"); // If the current tile is in the set of possible moves, 47m background, else 49m background
+            printw("%s", getTileSymbol(board[tileIndex]).c_str());
+            printw("\033[0m");
+
+            tileIndex++;
+        }
+        printw("\n");
+    }
+    refresh();
+}
+
+// Functions for running test game instance
 void setupGame(GameInstance &game) {
+    auto getUserInput = []() {
+        std::string input = "";
+        int ch;       
+        while ((ch = getch()) != '\n') {
+            if (ch == KEY_BACKSPACE || ch == 263) {
+                if (!input.empty()) {
+                    input.pop_back();
+                    int y, x;
+                    getyx(stdscr, y, x);
+                    mvprintw(y, x-1, " ");
+                    move(y, x-1);
+                    refresh();
+                }
+            } else if (ch >= '0' && ch <= '9') {
+                input += (char)ch;
+                addch(ch);
+                refresh();
+            }
+        }
+        return input;
+    };
+
+    int winWidth = 4*(game.boardWidth+1);
+    int winHeight = game.boardHeight+1;
+    WINDOW * window = createNewWindow(winHeight, winWidth, (LINES-winHeight)/2, (COLS-winWidth)/2);
+
     for (int i = 0; i < game.playerPieces.size(); i++) {
-        // std::system("clear");
-        printBoard(game.board, game.boardWidth, game.boardHeight);
+        printBoard(game.board, game.boardWidth, game.boardHeight, window);
 
         Piece * piece = game.playerPieces[i];
-        std::cout << "Placing piece " << i+1 << " of " << game.playerPieces.size() << ":" << std::endl;
-        std::cout << "    Piece type: " << getPieceType(piece) << std::endl; 
+        printw("Placing piece %d of %lu:\n", i+1, game.playerPieces.size());
+        printw("    Piece type: %s\n", getPieceType(piece).c_str()); 
 
+        std::string coordInput;
         int xin, yin;
-        std::cout << "Enter x coordinate: ";
-        std::cin >> xin;
-        std::cin.ignore();
+        printw("Enter x coordinate: ");
+        refresh();
+        coordInput = getUserInput();
+        if (coordInput.empty()) {
+            printw("\nError: no coordinate entered\n");
+            refresh();
+            i--;
+            continue;
+        } else {
+            xin = stoul(coordInput);
+        }
 
-        std::cout << "Enter y cooridnate: ";
-        std::cin >> yin;
-        std::cin.ignore();
+        coordInput = "";
+        printw("Enter y cooridnate: ");
+        refresh();
+        if (coordInput.empty()) {
+            printw("\nError: no coordinate entered\n");
+            refresh();
+            i--;
+            continue;
+        } else {
+            xin = stoul(coordInput);
+        }
 
         xin--;
         yin--;
 
         if (xin >= game.boardWidth || xin < 0 || yin >= game.boardHeight || yin < 0) {
-            std::cout << "Error, selected (x, y) coordinate outside of board range.";
-            std::cin.ignore();
+            printw("Error, selected (x, y) coordinate outside of board range.\n");
+            refresh();
             i--;
-            break;
+            continue;
         }
 
-        if (yin < game.boardHeight - 2) {
-            std::cout << "Error, selected (x, y) coordinate outside of player deployment zone.";
-            std::cin.ignore();
+        if (yin < game.boardHeight - 1) {
+            printw("Error, selected (x, y) coordinate outside of player deployment zone.\n");
+            refresh();
             i--;
-            break;
+            continue;
         }
 
         if (game.addPiece(piece, xin, yin)) {
-            std::cout << "Piece successfully added at (" << xin+1 << ", " << yin+1 << ")" << std::endl;
+            printw("Piece successfully added at (%d, %d)\n", xin+1, yin+1);
         } else {
             i--;
-            std::cout << "Piece placement unsuccessful, try again" << std::endl;
+            printw("Piece placement unsuccessful, try again\n");
+            continue;
         }
     }
 
-    std::cout << "Placing enemy pieces..." << std::endl;
+    printw("Placing enemy pieces...\n");
     for (int i = 0; i < game.enemyPieces.size(); i++) {
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_int_distribution disX(0, game.boardWidth);
-        std::uniform_int_distribution disY(0, 1);
+        // std::uniform_int_distribution disY(0, 1);
         
-        if (game.addPiece(game.enemyPieces[i], disX(gen), disY(gen))) {
-            std::cout << "Enemy piece " << i+1 << " added." << std::endl;
+        if (game.addPiece(game.enemyPieces[i], disX(gen), 0)) {
+            printw("Enemy piece %d added.\n", i+1);
+            refresh();
         } else {
+            printw("Error, enemy piece #%d failed to be added to board, trying again", i+1);
             i--;
         }
     }
 }
 
 void runGame(GameInstance &game, bool startingPlayer) {
-    std::cout << "Starting Game" << std::endl;
+    printw("Starting Game\n");;
     (startingPlayer) ? game.turnCount = 1 : game.turnCount = 2;
-    std::cout << "Starting Player: " << ((startingPlayer) ? "player" : "enemy") << std::endl;
+    printw("Starting Player: %s\n", (startingPlayer) ? "player" : "enemy");
+    refresh();
+    int winWidth = 4*(game.boardWidth+1);
+    int winHeight = game.boardHeight+1;
+    WINDOW * window = createNewWindow(winHeight, winWidth, (LINES-winHeight)/2, (COLS-winWidth)/2);
     
     int gameStatus = 0; // 0: redo move
                         // 1: go onto next turn
@@ -169,25 +298,27 @@ void runGame(GameInstance &game, bool startingPlayer) {
                         // 3: enemy wins
                         // 4: quit
     while (!(gameStatus == 4 || gameStatus == 3 || gameStatus == 2)) {
-        std::cout << "Turn " << game.turnCount << std::endl;
+        printw("Turn %d\n", game.turnCount);
+        refresh();
 
         if (game.turnCount % 2 == 1) {
-            printBoard(game.board, game.boardWidth, game.boardHeight);
-            std::cout << "Starting player turn..." << std::endl;
-            std::cout << "Player pieces: " << std::endl;
+            printBoard(game.board, game.boardWidth, game.boardHeight, window);
+            printw("Starting player turn...\n");
+            printw("Player pieces: \n");
+            refresh();
             Move selectedMove;
 
             for (Piece * piece : game.playerPieces) {
-                std::cout << "    Piece Type: " << getPieceType(piece) << " with ID: " << piece->id+1 << " at (" << game.getPieceTile(piece)->x+1 << ", " << game.getPieceTile(piece)->y+1 << ")" << std::endl;
+                printw("    Piece Type: %s with ID: %d  at (%d, %d)", getPieceType(piece).c_str(), piece->id, game.getPieceTile(piece)->x+1, game.getPieceTile(piece)->y+1);
             }
 
             int input;
-            std::cout << "Enter the ID of the piece to move (0 to quit): ";
+            printw("Enter the ID of the piece to move (0 to quit): ");
             std::cin >> input;
             std::cin.ignore();
 
             if (input == 0) {
-                std::cout << "Quitting..." << std::endl;
+                printw("Quitting...");
                 gameStatus = 4;
                 break;
             }
@@ -198,11 +329,11 @@ void runGame(GameInstance &game, bool startingPlayer) {
                     pieceFound = true;
                     printValidTilesBoard(game.board, game.getValidMoves(piece), game.boardWidth, game.boardHeight);
                     int xin, yin;
-                    std::cout << "Enter x coordinate: ";
+                    printw("Enter x coordinate: ");
                     std::cin >> xin;
                     std::cin.ignore();
 
-                    std::cout << "Enter y cooridnate: ";
+                    printw("Enter y cooridnate: ");
                     std::cin >> yin;
                     std::cin.ignore();
 
@@ -214,7 +345,7 @@ void runGame(GameInstance &game, bool startingPlayer) {
             }
             (pieceFound) ? gameStatus = game.takePlayerTurn(selectedMove) : gameStatus = 0;
         } else {
-            std::cout << "Enemy taking turn" << std::endl;
+            printw("Enemy taking turn\n");
             gameStatus = game.takeEnemyTurn();
         }
 
@@ -223,8 +354,8 @@ void runGame(GameInstance &game, bool startingPlayer) {
     }   
     
     if (gameStatus == 2) {
-        std::cout << "Player Wins!" << std::endl;
+        printw("Player Wins!");
     } else {
-        std::cout << "Enemy Wins." << std::endl;
+        printw("Enemy Wins.");
     }
 }

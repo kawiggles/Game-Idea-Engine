@@ -10,4 +10,4 @@ target_include_directories(tests
     PUBLIC include/
 )
 
-target_link_libraries(tests PRIVATE shared)
+target_link_libraries(tests PRIVATE shared ${CURSES_LIBRARIES})
