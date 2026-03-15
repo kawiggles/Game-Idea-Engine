@@ -3,7 +3,6 @@
 #include "types.hpp"
 #include "printboards.hpp"
 
-#include <iostream>
 #include <unordered_set>
 #include <random>
 #include <ncurses.h>
@@ -27,6 +26,7 @@ WINDOW * createNewWindow(int height, int width, int starty, int startx) {
 
 void destroyWindow(WINDOW * window) {
     wborder(window, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
+    wclear(window);
     wrefresh(window);
     delwin(window);
 }
@@ -39,7 +39,7 @@ void initColors() {
     init_color(9, 500, 500, 0); // Light Yellow for fields
     init_color(10, 500, 0, 0); // Light Red for roads
     init_color(11, 188, 98, 203); // Dark Purple for peaks
-    init_color(12, 800, 800, 800); // Highlight color
+    init_color(12, 700, 700, 700); // Highlight color
     // Normal pairs
     init_pair(1, 4, 0);     // Water
     init_pair(2, 9, 0);     // Field
@@ -61,15 +61,32 @@ void initColors() {
     init_pair(18, 11, 12);
     init_pair(19, 6, 12);
     // Pairs for pieces
-    init_pair(21, 7, 0);
-    init_pair(22, 1, 0);
-    init_pair(23, 7, 12);
-    init_pair(24, 1, 12);
+    init_pair(21, COLOR_WHITE, 0);
+    init_pair(22, COLOR_RED, 0);
+    init_pair(23, COLOR_WHITE, 12);
+    init_pair(24, COLOR_RED, 12);
 }
 
 // String generating functions
 Symbol getSymbol(const Tile &tile) {
     Symbol symbol;
+
+    switch (tile.terrain) {
+        case TerrainType::Water:    symbol.terrainColor = 1; break;
+        case TerrainType::Field:    symbol.terrainColor = 2; break;
+        case TerrainType::Forest:   symbol.terrainColor = 3; break;
+        case TerrainType::Mountain: symbol.terrainColor = 4; break;
+        case TerrainType::Road:     symbol.terrainColor = 5; break;
+        case TerrainType::Desert:   symbol.terrainColor = 6; break;
+        case TerrainType::Jungle:   symbol.terrainColor = 7; break;
+        case TerrainType::Peak:     symbol.terrainColor = 8; break;
+        // Arctic Tiles
+        case TerrainType::IceField: symbol.terrainColor = 31; break;
+        case TerrainType::SnowField:symbol.terrainColor = 32; break;
+        case TerrainType::Tundra:   symbol.terrainColor = 33; break;
+        // Mission Tiles
+        case TerrainType::Objective:symbol.terrainColor = 9; break;
+    }
     
     if (tile.occupyingPiece) {
         switch (tile.occupyingPiece->type) {
@@ -94,23 +111,58 @@ Symbol getSymbol(const Tile &tile) {
         } else {
             symbol.pieceColor = 22;
         }
+    } else {
+        symbol.pieceColor = symbol.terrainColor;
     }
+
+    return symbol;
+}
+
+Symbol getValidTileSymbol(const Tile &tile) {
+    Symbol symbol;
     
     switch (tile.terrain) {
-        case TerrainType::Water:    symbol.terrainColor = 1; break;
-        case TerrainType::Field:    symbol.terrainColor = 2; break;
-        case TerrainType::Forest:   symbol.terrainColor = 3; break;
-        case TerrainType::Mountain: symbol.terrainColor = 4; break;
-        case TerrainType::Road:     symbol.terrainColor = 5; break;
-        case TerrainType::Desert:   symbol.terrainColor = 6; break;
-        case TerrainType::Jungle:   symbol.terrainColor = 7; break;
-        case TerrainType::Peak:     symbol.terrainColor = 8; break;
+        case TerrainType::Water:    symbol.terrainColor = 11; break;
+        case TerrainType::Field:    symbol.terrainColor = 12; break;
+        case TerrainType::Forest:   symbol.terrainColor = 13; break;
+        case TerrainType::Mountain: symbol.terrainColor = 14; break;
+        case TerrainType::Road:     symbol.terrainColor = 15; break;
+        case TerrainType::Desert:   symbol.terrainColor = 16; break;
+        case TerrainType::Jungle:   symbol.terrainColor = 17; break;
+        case TerrainType::Peak:     symbol.terrainColor = 18; break;
         // Arctic Tiles
         case TerrainType::IceField: symbol.terrainColor = 31; break;
         case TerrainType::SnowField:symbol.terrainColor = 32; break;
         case TerrainType::Tundra:   symbol.terrainColor = 33; break;
         // Mission Tiles
-        case TerrainType::Objective:symbol.terrainColor = 9; break;
+        case TerrainType::Objective:symbol.terrainColor = 19; break;
+    }
+    
+    if (tile.occupyingPiece) {
+        switch (tile.occupyingPiece->type) {
+            case PieceType::Light:     symbol.pieceSymbol = 'P'; break;
+            case PieceType::Shield:    symbol.pieceSymbol = 'S'; break;
+            case PieceType::Elite:     symbol.pieceSymbol = 'E'; break;
+            case PieceType::Archer:    symbol.pieceSymbol = 'A'; break;
+            case PieceType::LCavalry:  symbol.pieceSymbol = 'L'; break;
+            case PieceType::MCavalry:  symbol.pieceSymbol = 'M'; break;
+            case PieceType::HCavalry:  symbol.pieceSymbol = 'H'; break;
+            case PieceType::Catapult:  symbol.pieceSymbol = 'T'; break;
+            case PieceType::Ballista:  symbol.pieceSymbol = 'B'; break;
+            case PieceType::Chariot:   symbol.pieceSymbol = 'C'; break;
+            case PieceType::Commander: symbol.pieceSymbol = 'G'; break;
+            case PieceType::Wizard:    symbol.pieceSymbol = 'W'; break;
+            case PieceType::Assassin:  symbol.pieceSymbol = 'X'; break;
+            case PieceType::Druid:     symbol.pieceSymbol = 'D'; break;
+        }
+
+        if (tile.occupyingPiece->ownedByPlayer) {
+            symbol.pieceColor = 23;
+        } else {
+            symbol.pieceColor = 24;
+        }
+    } else {
+        symbol.pieceColor = symbol.terrainColor;
     }
     
     return symbol;
@@ -151,6 +203,7 @@ std::string getBiomeType(const BiomeType biome) {
 // Functions for printing board state
 void printBoard(const std::vector<Tile> &board, int width, int height, WINDOW * window, int cursorX, int cursorY) {
     wclear(window);
+    box(window, 0, 0);
     int tileIndex = 0;
     mvwprintw(window, 1, 1, "    "); // Empty space at the start of coordinate numbering
     for (int i = 0; i < width; i++) { // Column numbering
@@ -170,24 +223,34 @@ void printBoard(const std::vector<Tile> &board, int width, int height, WINDOW * 
 
         for (int j = 0; j < width; j++) {
             Symbol symbol = getSymbol(board[tileIndex]);
-            if (tileIndex == cursorY * width + cursorX) wattron(window, A_BLINK);
+            if (tileIndex == cursorY * width + cursorX) wattron(window, A_REVERSE);
             if (board[tileIndex].terrain == TerrainType::Water) {
                 wattron(window, COLOR_PAIR(symbol.terrainColor));
                 wprintw(window, "[~~]");
                 wattroff(window, COLOR_PAIR(symbol.terrainColor));
+                if (tileIndex == cursorY * width + cursorX) wattroff(window, A_REVERSE);
                 tileIndex++;
                 continue;
             }
             wattron(window, COLOR_PAIR(symbol.terrainColor));
             wprintw(window, "[ ");
             wattroff(window, COLOR_PAIR(symbol.terrainColor));
-            wattron(window, COLOR_PAIR(symbol.pieceColor));
-            wprintw(window, "%c", symbol.pieceSymbol);
-            wattroff(window, COLOR_PAIR(symbol.pieceColor));
+
+            if (tileIndex == cursorY * width + cursorX) {
+                wattron(window, COLOR_PAIR(symbol.terrainColor));
+                wprintw(window, "%c", symbol.pieceSymbol);
+                wattroff(window, COLOR_PAIR(symbol.terrainColor));
+            } else {
+                if (tileIndex == cursorY * width + cursorX) wattroff(window, A_REVERSE);
+                wattron(window, COLOR_PAIR(symbol.pieceColor));
+                wprintw(window, "%c", symbol.pieceSymbol);
+                wattroff(window, COLOR_PAIR(symbol.pieceColor));
+                if (tileIndex == cursorY * width + cursorX) wattron(window, A_REVERSE);
+            }
+
             wattron(window, COLOR_PAIR(symbol.terrainColor));
-            wprintw(window, "]");
-            wattroff(window, COLOR_PAIR(symbol.terrainColor));
-            if (tileIndex == cursorY * width + cursorX) wattroff(window, A_BLINK);
+            wprintw(window, "]"); wattroff(window, COLOR_PAIR(symbol.terrainColor));
+            if (tileIndex == cursorY * width + cursorX) wattroff(window, A_REVERSE);
 
             tileIndex++;
         }
@@ -195,7 +258,9 @@ void printBoard(const std::vector<Tile> &board, int width, int height, WINDOW * 
     wrefresh(window);
 }
 
-void printValidTilesBoard(std::vector<Tile> &board, std::vector<Move> moves, int width, int height, WINDOW * window) {
+void printValidTilesBoard(std::vector<Tile> &board, std::vector<Move> moves, int width, int height, WINDOW * window, int cursorX, int cursorY) {
+    wclear(window);
+    box(window, 0, 0);
     std::unordered_set<Tile *> moveSet(moves.size()); 
     for (int i = 0; i < moves.size(); i++) moveSet.insert(moves[i].to);
     
@@ -217,10 +282,37 @@ void printValidTilesBoard(std::vector<Tile> &board, std::vector<Move> moves, int
         }
 
         for (int j = 0; j < width; j++) {
-            
-            (moveSet.count(&board[tileIndex])) ? printw("\033[47m") : printw("\033[49m"); // If the current tile is in the set of possible moves, 47m background, else 49m background
-            wprintw(window, "%s", getSymbol(board[tileIndex]));
-            printw("\033[0m");
+            Symbol symbol;
+            (moveSet.count(&board[tileIndex])) ? symbol = getValidTileSymbol(board[tileIndex]) : symbol = getSymbol(board[tileIndex]); // Changes background depending on if the move is in the valid tiles set
+            if (tileIndex == cursorY * width + cursorX) wattron(window, A_REVERSE);
+            if (board[tileIndex].terrain == TerrainType::Water) {
+                wattron(window, COLOR_PAIR(symbol.terrainColor));
+                wprintw(window, "[~~]");
+                wattroff(window, COLOR_PAIR(symbol.terrainColor));
+                if (tileIndex == cursorY * width + cursorX) wattroff(window, A_REVERSE);
+                tileIndex++;
+                continue;
+            }
+            wattron(window, COLOR_PAIR(symbol.terrainColor));
+            wprintw(window, "[ ");
+            wattroff(window, COLOR_PAIR(symbol.terrainColor));
+
+            if (tileIndex == cursorY * width + cursorX) {
+                wattron(window, COLOR_PAIR(symbol.terrainColor));
+                wprintw(window, "%c", symbol.pieceSymbol);
+                wattroff(window, COLOR_PAIR(symbol.terrainColor));
+            } else {
+                if (tileIndex == cursorY * width + cursorX) wattroff(window, A_REVERSE);
+                wattron(window, COLOR_PAIR(symbol.pieceColor));
+                wprintw(window, "%c", symbol.pieceSymbol);
+                wattroff(window, COLOR_PAIR(symbol.pieceColor));
+                if (tileIndex == cursorY * width + cursorX) wattron(window, A_REVERSE);
+            }
+
+            wattron(window, COLOR_PAIR(symbol.terrainColor));
+            wprintw(window, "]");
+            wattroff(window, COLOR_PAIR(symbol.terrainColor));
+            if (tileIndex == cursorY * width + cursorX) wattroff(window, A_REVERSE);
 
             tileIndex++;
         }
@@ -230,10 +322,14 @@ void printValidTilesBoard(std::vector<Tile> &board, std::vector<Move> moves, int
 
 // Functions for running test game instance
 void setupGame(GameInstance &game, WINDOW * terminalWindow) {
-    void (*func_ptr)(const std::vector<Tile> &board, int width, int height, WINDOW * window, int cursorX, int cursorY) = &printBoard;
-    auto getUserInput = [game, terminalWindow, func_ptr](WINDOW * boardWindow, int cursorX, int cursorY) {
+    int winWidth = 4*(game.boardWidth+1) + 2;
+    int winHeight = game.boardHeight + 1 + 2;
+    WINDOW * boardWindow = createNewWindow(winHeight, winWidth, (LINES-winHeight)/4, (COLS-winWidth)/2);
+    int cursorX = 0, cursorY = game.boardHeight-1;
+
+    auto getUserInput = [&game, terminalWindow, boardWindow, &cursorX, &cursorY]() {
+        printBoard(game.board, game.boardWidth, game.boardHeight, boardWindow, cursorX,  cursorY);
         int ch;       
-        func_ptr(game.board, game.boardWidth, game.boardHeight, boardWindow, cursorX, cursorY);
         while ((ch = wgetch(terminalWindow)) != '\n') {
             switch (ch) {
                 case KEY_UP:
@@ -249,18 +345,13 @@ void setupGame(GameInstance &game, WINDOW * terminalWindow) {
                     if (cursorX < game.boardWidth - 1) cursorX++;
                     break;
             }
-            func_ptr(game.board, game.boardWidth, game.boardHeight, boardWindow, cursorX, cursorY);
+            printBoard(game.board, game.boardWidth, game.boardHeight, boardWindow, cursorX, cursorY);
         }
         return cursorY * game.boardWidth + cursorX;
     };
 
     wrefresh(terminalWindow);
-
-    int winWidth = 4*(game.boardWidth+1) + 2;
-    int winHeight = game.boardHeight + 1 + 2;
-    WINDOW * boardWindow = createNewWindow(winHeight, winWidth, (LINES-winHeight)/4, (COLS-winWidth)/2);
     
-    int cursorX = 0, cursorY = game.boardHeight-1;
     for (int i = 0; i < game.playerPieces.size(); i++) {
         Piece * piece = game.playerPieces[i];
         wprintw(terminalWindow, "Placing piece %d of %lu:\n", i+1, game.playerPieces.size());
@@ -269,18 +360,18 @@ void setupGame(GameInstance &game, WINDOW * terminalWindow) {
         wprintw(terminalWindow, "Select tile to place piece: ");
         wrefresh(terminalWindow);
 
-        int coordInput = getUserInput(boardWindow, cursorX, cursorY);
+        int coordInput = getUserInput();
         cursorX = game.board[coordInput].x;
         cursorY = game.board[coordInput].y;
 
         if (coordInput > game.board.size() || coordInput < 0) {
-            wprintw(terminalWindow, "Error, selected (x, y) coordinate outside of board range.\n");
+            wprintw(terminalWindow, "\nError, selected (x, y) coordinate outside of board range.\n");
             i--;
             continue;
         }
 
         if (coordInput < game.board.size() - game.boardWidth - 1) {
-            wprintw(terminalWindow, "Error, selected (x, y) coordinate outside of player deployment zone.\n");
+            wprintw(terminalWindow, "\nError, selected (x, y) coordinate outside of player deployment zone.\n");
             i--;
             continue;
         }
@@ -289,7 +380,7 @@ void setupGame(GameInstance &game, WINDOW * terminalWindow) {
             wprintw(terminalWindow, "\nPiece successfully added at (%d, %d)\n", cursorX+1, cursorY+1);
         } else {
             i--;
-            wprintw(terminalWindow, "Piece placement unsuccessful, try again\n");
+            wprintw(terminalWindow, "\nPiece placement unsuccessful, try again\n");
             continue;
         }
         wrefresh(terminalWindow);
@@ -310,71 +401,88 @@ void setupGame(GameInstance &game, WINDOW * terminalWindow) {
             i--;
         }
     }
+
+    printBoard(game.board, game.boardWidth, game.boardHeight, boardWindow, 300, 300);
+    wprintw(terminalWindow, "Game set up, press enter to begin game...");
+    wgetch(terminalWindow);
+    wrefresh(terminalWindow);
+    destroyWindow(boardWindow);
 }
 
-void runGame(GameInstance &game, bool startingPlayer) {
-    printw("Starting Game\n");;
+void runGame(GameInstance &game, bool startingPlayer, WINDOW * terminalWindow) {
+    wprintw(terminalWindow, "Starting Game\n");
     (startingPlayer) ? game.turnCount = 1 : game.turnCount = 2;
-    printw("Starting Player: %s\n", (startingPlayer) ? "player" : "enemy");
-    refresh();
-    int winWidth = 4*(game.boardWidth+1);
-    int winHeight = game.boardHeight+1;
-    WINDOW * window = createNewWindow(winHeight, winWidth, (LINES-winHeight)/2, (COLS-winWidth)/2);
-    
+    wprintw(terminalWindow, "Starting Player: %s\n", (startingPlayer) ? "player" : "enemy");
+    wrefresh(terminalWindow);
+    int winWidth = 4*(game.boardWidth+1) + 2;
+    int winHeight = game.boardHeight + 1 + 2;
+    WINDOW * boardWindow = createNewWindow(winHeight, winWidth, (LINES-winHeight)/4, (COLS-winWidth)/2);
+    int cursorX = 0, cursorY = game.boardHeight-1;
     int gameStatus = 0; // 0: redo move
                         // 1: go onto next turn
                         // 2: player wins
                         // 3: enemy wins
                         // 4: quit
-    while (!(gameStatus == 4 || gameStatus == 3 || gameStatus == 2)) {
-        printw("Turn %d\n", game.turnCount);
-        refresh();
 
-        if (game.turnCount % 2 == 1) {
-            printBoard(game.board, game.boardWidth, game.boardHeight, window, 2, 4);
-            printw("Starting player turn...\n");
-            printw("Player pieces: \n");
-            refresh();
-            Move selectedMove;
-
-            for (Piece * piece : game.playerPieces) {
-                printw("    Piece Type: %s with ID: %d  at (%d, %d)", getPieceType(piece).c_str(), piece->id, game.getPieceTile(piece)->x+1, game.getPieceTile(piece)->y+1);
+    auto getUserInput = [&game, terminalWindow, boardWindow, &cursorX, &cursorY](bool valid, Piece * piece) {
+        (valid) ? printValidTilesBoard(game.board, game.getValidMoves(piece), game.boardWidth, game.boardHeight, boardWindow, cursorX, cursorY) : printBoard(game.board, game.boardWidth, game.boardHeight, boardWindow, cursorX,  cursorY);
+        int ch;      
+        do { 
+            (valid) ? printValidTilesBoard(game.board, game.getValidMoves(piece), game.boardWidth, game.boardHeight, boardWindow, cursorX, cursorY) : printBoard(game.board, game.boardWidth, game.boardHeight, boardWindow, cursorX,  cursorY);
+            ch = wgetch(terminalWindow);
+            switch (ch) {
+                case KEY_UP:
+                    if (cursorY > 0) cursorY--;
+                    break;
+                case KEY_DOWN:
+                    if (cursorY < game.boardHeight - 1) cursorY++; 
+                    break;
+                case KEY_LEFT:
+                    if (cursorX > 0) cursorX--;
+                    break;
+                case KEY_RIGHT:
+                    if (cursorX < game.boardWidth - 1) cursorX++;
+                    break;
             }
+        } while (ch != '\n' && ch != 27);
 
-            int input;
-            printw("Enter the ID of the piece to move (0 to quit): ");
-            std::cin >> input;
-            std::cin.ignore();
+        if (ch == 27) return -1;
+        return cursorY * game.boardWidth + cursorX;
+    };
 
-            if (input == 0) {
-                printw("Quitting...");
+    while (!(gameStatus == 4 || gameStatus == 3 || gameStatus == 2)) {
+        wprintw(terminalWindow, "Turn %d\n", game.turnCount);
+        wrefresh(terminalWindow);
+
+        int cursorX = 0, cursorY = game.boardHeight-1;
+        if (game.turnCount % 2 == 1) {
+            wprintw(terminalWindow, "Starting player turn...\n");
+            wprintw(terminalWindow, "Select a piece to move (esc to quit)...\n");
+
+            Move selectedMove;
+            bool moveSuccess = false;
+            int coordInput = getUserInput(false, nullptr);
+            wrefresh(terminalWindow);
+
+            if (coordInput == -1) {
+                wprintw(terminalWindow, "Quitting...");
+                wrefresh(terminalWindow);
                 gameStatus = 4;
                 break;
             }
 
-            bool pieceFound = false;
-            for (Piece * piece : game.playerPieces) {
-                if (input-1 == piece->id) {
-                    pieceFound = true;
-                    printValidTilesBoard(game.board, game.getValidMoves(piece), game.boardWidth, game.boardHeight, window);
-                    int xin, yin;
-                    printw("Enter x coordinate: ");
-                    std::cin >> xin;
-                    std::cin.ignore();
-
-                    printw("Enter y cooridnate: ");
-                    std::cin >> yin;
-                    std::cin.ignore();
-
-                    xin--;
-                    yin--;
-
-                    selectedMove = Move{MoveType::Move, game.getPieceTile(piece), game.getTile(xin, yin)};
-                }
+            if (game.board[coordInput].occupyingPiece && game.board[coordInput].occupyingPiece->ownedByPlayer) {
+                Piece * piece = game.board[coordInput].occupyingPiece;
+                wprintw(terminalWindow, "Select a tile to move to...\n");
+                wrefresh(terminalWindow);
+                coordInput = getUserInput(true, piece);
+                selectedMove = Move{MoveType::Move, game.getPieceTile(piece), &game.board[coordInput]};
+                moveSuccess = true;
             }
-            (pieceFound) ? gameStatus = game.takePlayerTurn(selectedMove) : gameStatus = 0;
+            (moveSuccess) ? gameStatus = game.takePlayerTurn(selectedMove) : gameStatus = 0;
         } else {
-            printw("Enemy taking turn\n");
+            wprintw(terminalWindow, "Enemy taking turn...\n");
+            wrefresh(terminalWindow);
             gameStatus = game.takeEnemyTurn();
         }
 
@@ -383,8 +491,11 @@ void runGame(GameInstance &game, bool startingPlayer) {
     }   
     
     if (gameStatus == 2) {
-        printw("Player Wins!");
+        wprintw(terminalWindow, "Player Wins!");
     } else {
-        printw("Enemy Wins.");
+        wprintw(terminalWindow, "Enemy Wins.");
     }
+
+    wrefresh(terminalWindow);
+    destroyWindow(boardWindow);
 }

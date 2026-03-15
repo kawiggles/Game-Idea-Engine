@@ -17,7 +17,7 @@ void initColors();
 // Function to print board to terminal, for testing purposes
 void printBoard(const std::vector<Tile> &board, int width, int height, WINDOW * window, int cursorX, int cursorY);
 
-void printValidTilesBoard(std::vector<Tile> &board, std::vector<Move> moves, int width, int height, WINDOW * window);
+void printValidTilesBoard(std::vector<Tile> &board, std::vector<Move> moves, int width, int height, WINDOW * window, int cursorX, int cursorY);
 
 struct Symbol {
     int terrainColor = 0;
@@ -27,6 +27,8 @@ struct Symbol {
 
 // Gets the symbol and colors for a tile as a the above structure
 Symbol getSymbol(const Tile &tile);
+
+Symbol getValidTileSymbol(const Tile &tile);
 
 // Gets a piece's type as a string
 std::string getPieceType(const Piece * piece);
@@ -38,6 +40,6 @@ std::string getBiomeType(const BiomeType biome);
 void setupGame(GameInstance &game, WINDOW * terminalWindow);
 
 // Function to get user input for a game instance
-void runGame(GameInstance &game, bool startingPlayer);
+void runGame(GameInstance &game, bool startingPlayer, WINDOW * terminalWindow);
 
 #endif

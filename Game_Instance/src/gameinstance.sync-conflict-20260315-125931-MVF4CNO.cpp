@@ -37,14 +37,14 @@ GameInstance::GameInstance(unsigned long seed, BiomeType biome, MissionType miss
     this->hasRoad = hasRoad;
 
     std::mt19937 gen(seed); // Random width and height
-    std::uniform_int_distribution<int> dis(6, 10);
+    std::uniform_int_distribution<int> dis(5, 10);
     boardHeight = dis(gen);
     boardWidth = dis(gen);
 }
 
-void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *> enemyPieces, WINDOW * window) {
-    wprintw(window, "Generating game instance...\n");
-    wprintw(window, "Generating board of dimensions %d by %d.\n", boardWidth, boardHeight);
+void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *> enemyPieces) {
+    printw("Generating game instance...\n");
+    printw("Generating board of dimensions %d by %d.\n", boardWidth, boardHeight);
     board.reserve(boardWidth * boardHeight); 
 
     std::mt19937 gen(seed);
@@ -62,10 +62,10 @@ void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *>
             // (x, y), terrain type, and null pointer representing no occupying piece
         }
     }
-    wprintw(window, "Base board generated\n");
+    printw("Base board generated\n");
 
     if (hasRoad) {
-        wprintw(window, "Generating road.\n");
+        printw("Generating road.\n");
         Tile * startRoad;
         Tile * endRoad;
         std::uniform_int_distribution<int> roadDis(0, boardWidth-1);
@@ -81,18 +81,18 @@ void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *>
         } while (endRoad->terrain != TerrainType::Field && startRoad->terrain != TerrainType::Forest);
 
         std::vector<Tile *> road;
-        if (startRoad != nullptr && endRoad != nullptr) road = generateRoad(startRoad, endRoad, board, boardWidth, boardHeight, window);
+        if (startRoad != nullptr && endRoad != nullptr) road = generateRoad(startRoad, endRoad, board, boardWidth, boardHeight);
         for (Tile * tile : road) {
             if (tile != nullptr) {
                 tile->terrain = TerrainType::Road;
             }
         }
-        wprintw(window, "Road generated\n");
+        printw("Road generated\n");
     }
 
     switch (mission) {
         case MissionType::HoldThePoint: {
-            wprintw(window, "Mission type is Hold the Point\n");
+            printw("Mission type is Hold the Point\n");
             std::uniform_int_distribution<int> xDist(0, boardWidth-1);
             int margin = boardHeight/4;
             std::uniform_int_distribution<int> yDist(margin, boardHeight-margin-1);
@@ -102,10 +102,10 @@ void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *>
             break;
         }
         default:
-            wprintw(window, "Error, no mission type for the Game Instance\n");
+            printw("Error, no mission type for the Game Instance\n");
     }
 
-    wprintw(window, "Copying board and pieces to game instance...\n");
+    printw("Copying board and pieces to game instance...\n");
     this->playerPieces = runPieces; 
     this->enemyPieces = enemyPieces;
 }
@@ -134,8 +134,8 @@ bool GameInstance::pieceExists(Piece * piece) {
     return false;
 }
 
-bool GameInstance::addPiece(Piece * piece, int tileIndex) {
-    if (tileIndex > board.size()) {
+bool GameInstance::addPiece(Piece * piece, int x, int y) {
+    if (x < 0 || y < 0 || x >= boardWidth || y >= boardHeight) {
         printw("Fail, coordinates out of bounds\n");
         return false; // Fail condition 1, out of bounds
     }
@@ -145,7 +145,7 @@ bool GameInstance::addPiece(Piece * piece, int tileIndex) {
         return false; // Fail condition 2, piece not in game
     }
 
-    Tile * tile = &board[tileIndex];
+    Tile * tile = getTile(x, y);
     if (tile->occupyingPiece != nullptr) {
         printw("Fail, tile already occupied\n");
         return false;

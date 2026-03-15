@@ -108,7 +108,10 @@ int main() {
     wprintw(terminalWindow, "Game Instance made, setting up game\n");
     wrefresh(terminalWindow);
     setupGame(testGame, terminalWindow);
-    runGame(testGame, true);
+    runGame(testGame, true, terminalWindow);
+
+    wprintw(terminalWindow, "\nGame exiting...");
+    wgetch(terminalWindow);
 
     destroyWindow(terminalWindow);
     endwin();
