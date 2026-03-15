@@ -1,5 +1,6 @@
 #include "tiles.hpp"
 #include "gameinstance.hpp"
+#include "types.hpp"
 #include "printboards.hpp"
 
 #include <iostream>
@@ -19,6 +20,7 @@ WINDOW * createNewWindow(int height, int width, int starty, int startx) {
     WINDOW * newWindow = newwin(height, width, starty, startx);
     box(newWindow, 0, 0);
     wrefresh(newWindow);
+    curs_set(0);
 
     return newWindow;
 }
@@ -29,59 +31,89 @@ void destroyWindow(WINDOW * window) {
     delwin(window);
 }
 
+void initColors() {
+    start_color();
+    can_change_color();
+    // Terrain Colors
+    init_color(8, 0, 500, 0); // Light Green for forest
+    init_color(9, 500, 500, 0); // Light Yellow for fields
+    init_color(10, 500, 0, 0); // Light Red for roads
+    init_color(11, 188, 98, 203); // Dark Purple for peaks
+    init_color(12, 800, 800, 800); // Highlight color
+    // Normal pairs
+    init_pair(1, 4, 0);     // Water
+    init_pair(2, 9, 0);     // Field
+    init_pair(3, 8, 0);     // Forest
+    init_pair(4, 5, 0);     // Mountain
+    init_pair(5, 10, 0);    // Road
+    init_pair(6, 3, 0);     // Desert
+    init_pair(7, 2, 0);     // Jungle
+    init_pair(8, 11, 0);    // Peak
+    init_pair(9, 6, 0);     // Objective
+    // Pairs for when valid
+    init_pair(11, 4, 12);
+    init_pair(12, 9, 12);
+    init_pair(13, 8, 12);
+    init_pair(14, 5, 12);
+    init_pair(15, 10, 12);
+    init_pair(16, 3, 12);  
+    init_pair(17, 2, 12);
+    init_pair(18, 11, 12);
+    init_pair(19, 6, 12);
+    // Pairs for pieces
+    init_pair(21, 7, 0);
+    init_pair(22, 1, 0);
+    init_pair(23, 7, 12);
+    init_pair(24, 1, 12);
+}
+
 // String generating functions
-std::string getTileSymbol(const Tile &tile) {
-    std::string symbol = " ";  // Default: empty space
-    std::string pieceColor = ""; // Default: no color
+Symbol getSymbol(const Tile &tile) {
+    Symbol symbol;
     
     if (tile.occupyingPiece) {
-        // Determine piece letter
         switch (tile.occupyingPiece->type) {
-            case PieceType::Light:     symbol = "P"; break;
-            case PieceType::Shield:    symbol = "S"; break;
-            case PieceType::Elite:     symbol = "E"; break;
-            case PieceType::Archer:    symbol = "A"; break;
-            case PieceType::LCavalry:  symbol = "L"; break;
-            case PieceType::MCavalry:  symbol = "M"; break;
-            case PieceType::HCavalry:  symbol = "H"; break;
-            case PieceType::Catapult:  symbol = "T"; break;
-            case PieceType::Ballista:  symbol = "B"; break;
-            case PieceType::Chariot:   symbol = "C"; break;
-            case PieceType::Commander: symbol = "G"; break;
-            case PieceType::Wizard:    symbol = "W"; break;
-            case PieceType::Assassin:  symbol = "X"; break;
-            case PieceType::Druid:     symbol = "D"; break;
+            case PieceType::Light:     symbol.pieceSymbol = 'P'; break;
+            case PieceType::Shield:    symbol.pieceSymbol = 'S'; break;
+            case PieceType::Elite:     symbol.pieceSymbol = 'E'; break;
+            case PieceType::Archer:    symbol.pieceSymbol = 'A'; break;
+            case PieceType::LCavalry:  symbol.pieceSymbol = 'L'; break;
+            case PieceType::MCavalry:  symbol.pieceSymbol = 'M'; break;
+            case PieceType::HCavalry:  symbol.pieceSymbol = 'H'; break;
+            case PieceType::Catapult:  symbol.pieceSymbol = 'T'; break;
+            case PieceType::Ballista:  symbol.pieceSymbol = 'B'; break;
+            case PieceType::Chariot:   symbol.pieceSymbol = 'C'; break;
+            case PieceType::Commander: symbol.pieceSymbol = 'G'; break;
+            case PieceType::Wizard:    symbol.pieceSymbol = 'W'; break;
+            case PieceType::Assassin:  symbol.pieceSymbol = 'X'; break;
+            case PieceType::Druid:     symbol.pieceSymbol = 'D'; break;
         }
-        
-        // Color enemy pieces red
-        if (!tile.occupyingPiece->ownedByPlayer) {
-            pieceColor = "";  // Red
+
+        if (tile.occupyingPiece->ownedByPlayer) {
+            symbol.pieceColor = 21;
+        } else {
+            symbol.pieceColor = 22;
         }
     }
     
-    // Get terrain bracket color
-    std::string bracketColor;
     switch (tile.terrain) {
-        case TerrainType::Water:    return "[~~]";
-        case TerrainType::Field:    bracketColor = ""; break;  // Yellow
-        case TerrainType::Forest:   bracketColor = ""; break;  // Green
-        case TerrainType::Mountain: bracketColor = ""; break;  // Purple
-        case TerrainType::Road:     bracketColor = ""; break;  // HI Red
-        case TerrainType::Desert:   bracketColor = ""; break;  // HI Yellow
-        case TerrainType::Jungle:   bracketColor = ""; break;  // HI Green
-        case TerrainType::Peak:     bracketColor = ""; break;  // Black
+        case TerrainType::Water:    symbol.terrainColor = 1; break;
+        case TerrainType::Field:    symbol.terrainColor = 2; break;
+        case TerrainType::Forest:   symbol.terrainColor = 3; break;
+        case TerrainType::Mountain: symbol.terrainColor = 4; break;
+        case TerrainType::Road:     symbol.terrainColor = 5; break;
+        case TerrainType::Desert:   symbol.terrainColor = 6; break;
+        case TerrainType::Jungle:   symbol.terrainColor = 7; break;
+        case TerrainType::Peak:     symbol.terrainColor = 8; break;
         // Arctic Tiles
-        case TerrainType::IceField: bracketColor = ""; break;  // Cyan
-        case TerrainType::SnowField:bracketColor = ""; break;  // White
-        case TerrainType::Tundra:   bracketColor = ""; break;  // Green again, but it's fine because it replaces forests
+        case TerrainType::IceField: symbol.terrainColor = 31; break;
+        case TerrainType::SnowField:symbol.terrainColor = 32; break;
+        case TerrainType::Tundra:   symbol.terrainColor = 33; break;
         // Mission Tiles
-        case TerrainType::Objective:bracketColor = ""; break;  // HI Blue
+        case TerrainType::Objective:symbol.terrainColor = 9; break;
     }
     
-    // Construct final symbol
-    return bracketColor + "[ " + "" + 
-           pieceColor + symbol + "" + 
-           bracketColor + "]" + "";
+    return symbol;
 }
 
 std::string getPieceType(const Piece * piece) {
@@ -117,9 +149,10 @@ std::string getBiomeType(const BiomeType biome) {
 }
 
 // Functions for printing board state
-void printBoard(std::vector<Tile> &board, int width, int height, WINDOW * window) {
+void printBoard(const std::vector<Tile> &board, int width, int height, WINDOW * window, int cursorX, int cursorY) {
+    wclear(window);
     int tileIndex = 0;
-    wprintw(window, "    "); // Empty space at the start of coordinate numbering
+    mvwprintw(window, 1, 1, "    "); // Empty space at the start of coordinate numbering
     for (int i = 0; i < width; i++) { // Column numbering
         if (i < 9) {
             wprintw(window, "[ %d]", i+1);
@@ -127,157 +160,153 @@ void printBoard(std::vector<Tile> &board, int width, int height, WINDOW * window
             wprintw(window, "[%d]", i+1);
         }
     }
-    wprintw(window, "\n");;
-    for (int i = 0; i < height; i++) {
+    for (int i = 0; i < height; i++) { // Row numbering
+        wmove(window, i + 2, 1);
         if (i < 9) {
-            wprintw(window, "[ %d]", i+1); // Row numbering
+            wprintw(window, "[ %d]", i+1);
         } else {
             wprintw(window, "[%d]", i+1);
         }
 
         for (int j = 0; j < width; j++) {
-            wprintw(window, "%s", getTileSymbol(board[tileIndex]).c_str());
+            Symbol symbol = getSymbol(board[tileIndex]);
+            if (tileIndex == cursorY * width + cursorX) wattron(window, A_BLINK);
+            if (board[tileIndex].terrain == TerrainType::Water) {
+                wattron(window, COLOR_PAIR(symbol.terrainColor));
+                wprintw(window, "[~~]");
+                wattroff(window, COLOR_PAIR(symbol.terrainColor));
+                tileIndex++;
+                continue;
+            }
+            wattron(window, COLOR_PAIR(symbol.terrainColor));
+            wprintw(window, "[ ");
+            wattroff(window, COLOR_PAIR(symbol.terrainColor));
+            wattron(window, COLOR_PAIR(symbol.pieceColor));
+            wprintw(window, "%c", symbol.pieceSymbol);
+            wattroff(window, COLOR_PAIR(symbol.pieceColor));
+            wattron(window, COLOR_PAIR(symbol.terrainColor));
+            wprintw(window, "]");
+            wattroff(window, COLOR_PAIR(symbol.terrainColor));
+            if (tileIndex == cursorY * width + cursorX) wattroff(window, A_BLINK);
+
             tileIndex++;
         }
-        wprintw(window, "\n");
     }
-    refresh();
+    wrefresh(window);
 }
 
-void printValidTilesBoard(std::vector<Tile> &board, std::vector<Move> moves, int width, int height) {
+void printValidTilesBoard(std::vector<Tile> &board, std::vector<Move> moves, int width, int height, WINDOW * window) {
     std::unordered_set<Tile *> moveSet(moves.size()); 
-    
     for (int i = 0; i < moves.size(); i++) moveSet.insert(moves[i].to);
     
     int tileIndex = 0;
-    printw("    ");
+    mvwprintw(window, 1, 1, "    ");
     for (int i = 0; i < width; i++) { // Column numbering
         if (i < 9) {
-            printw("[ %d]", i+1);
+            wprintw(window, "[ %d]", i+1);
         } else {
-            printw("[%d]", i+1);
+            wprintw(window, "[%d]", i+1);
         }
     }
-    printw("\n");
     for (int i = 0; i < height; i++) {
+        wmove(window, i + 2, 1);
         if (i < 9) {
-            printw("[ %d]", i+1); // Row numbering
+            wprintw(window, "[ %d]", i+1); // Row numbering
         } else {
-            printw("[%d]", i+1);
+            wprintw(window,"[%d]", i+1);
         }
 
         for (int j = 0; j < width; j++) {
             
             (moveSet.count(&board[tileIndex])) ? printw("\033[47m") : printw("\033[49m"); // If the current tile is in the set of possible moves, 47m background, else 49m background
-            printw("%s", getTileSymbol(board[tileIndex]).c_str());
+            wprintw(window, "%s", getSymbol(board[tileIndex]));
             printw("\033[0m");
 
             tileIndex++;
         }
-        printw("\n");
     }
-    refresh();
+    wrefresh(window);
 }
 
 // Functions for running test game instance
-void setupGame(GameInstance &game) {
-    auto getUserInput = []() {
-        std::string input = "";
+void setupGame(GameInstance &game, WINDOW * terminalWindow) {
+    void (*func_ptr)(const std::vector<Tile> &board, int width, int height, WINDOW * window, int cursorX, int cursorY) = &printBoard;
+    auto getUserInput = [game, terminalWindow, func_ptr](WINDOW * boardWindow, int cursorX, int cursorY) {
         int ch;       
-        while ((ch = getch()) != '\n') {
-            if (ch == KEY_BACKSPACE || ch == 263) {
-                if (!input.empty()) {
-                    input.pop_back();
-                    int y, x;
-                    getyx(stdscr, y, x);
-                    mvprintw(y, x-1, " ");
-                    move(y, x-1);
-                    refresh();
-                }
-            } else if (ch >= '0' && ch <= '9') {
-                input += (char)ch;
-                addch(ch);
-                refresh();
+        func_ptr(game.board, game.boardWidth, game.boardHeight, boardWindow, cursorX, cursorY);
+        while ((ch = wgetch(terminalWindow)) != '\n') {
+            switch (ch) {
+                case KEY_UP:
+                    if (cursorY > 0) cursorY--;
+                    break;
+                case KEY_DOWN:
+                    if (cursorY < game.boardHeight - 1) cursorY++; 
+                    break;
+                case KEY_LEFT:
+                    if (cursorX > 0) cursorX--;
+                    break;
+                case KEY_RIGHT:
+                    if (cursorX < game.boardWidth - 1) cursorX++;
+                    break;
             }
+            func_ptr(game.board, game.boardWidth, game.boardHeight, boardWindow, cursorX, cursorY);
         }
-        return input;
+        return cursorY * game.boardWidth + cursorX;
     };
 
-    int winWidth = 4*(game.boardWidth+1);
-    int winHeight = game.boardHeight+1;
-    WINDOW * window = createNewWindow(winHeight, winWidth, (LINES-winHeight)/2, (COLS-winWidth)/2);
+    wrefresh(terminalWindow);
 
+    int winWidth = 4*(game.boardWidth+1) + 2;
+    int winHeight = game.boardHeight + 1 + 2;
+    WINDOW * boardWindow = createNewWindow(winHeight, winWidth, (LINES-winHeight)/4, (COLS-winWidth)/2);
+    
+    int cursorX = 0, cursorY = game.boardHeight-1;
     for (int i = 0; i < game.playerPieces.size(); i++) {
-        printBoard(game.board, game.boardWidth, game.boardHeight, window);
-
         Piece * piece = game.playerPieces[i];
-        printw("Placing piece %d of %lu:\n", i+1, game.playerPieces.size());
-        printw("    Piece type: %s\n", getPieceType(piece).c_str()); 
+        wprintw(terminalWindow, "Placing piece %d of %lu:\n", i+1, game.playerPieces.size());
+        wprintw(terminalWindow, "    Piece type: %s\n", getPieceType(piece).c_str()); 
 
-        std::string coordInput;
-        int xin, yin;
-        printw("Enter x coordinate: ");
-        refresh();
-        coordInput = getUserInput();
-        if (coordInput.empty()) {
-            printw("\nError: no coordinate entered\n");
-            refresh();
-            i--;
-            continue;
-        } else {
-            xin = stoul(coordInput);
-        }
+        wprintw(terminalWindow, "Select tile to place piece: ");
+        wrefresh(terminalWindow);
 
-        coordInput = "";
-        printw("Enter y cooridnate: ");
-        refresh();
-        if (coordInput.empty()) {
-            printw("\nError: no coordinate entered\n");
-            refresh();
-            i--;
-            continue;
-        } else {
-            xin = stoul(coordInput);
-        }
+        int coordInput = getUserInput(boardWindow, cursorX, cursorY);
+        cursorX = game.board[coordInput].x;
+        cursorY = game.board[coordInput].y;
 
-        xin--;
-        yin--;
-
-        if (xin >= game.boardWidth || xin < 0 || yin >= game.boardHeight || yin < 0) {
-            printw("Error, selected (x, y) coordinate outside of board range.\n");
-            refresh();
+        if (coordInput > game.board.size() || coordInput < 0) {
+            wprintw(terminalWindow, "Error, selected (x, y) coordinate outside of board range.\n");
             i--;
             continue;
         }
 
-        if (yin < game.boardHeight - 1) {
-            printw("Error, selected (x, y) coordinate outside of player deployment zone.\n");
-            refresh();
+        if (coordInput < game.board.size() - game.boardWidth - 1) {
+            wprintw(terminalWindow, "Error, selected (x, y) coordinate outside of player deployment zone.\n");
             i--;
             continue;
         }
 
-        if (game.addPiece(piece, xin, yin)) {
-            printw("Piece successfully added at (%d, %d)\n", xin+1, yin+1);
+        if (game.addPiece(piece, coordInput)) {
+            wprintw(terminalWindow, "\nPiece successfully added at (%d, %d)\n", cursorX+1, cursorY+1);
         } else {
             i--;
-            printw("Piece placement unsuccessful, try again\n");
+            wprintw(terminalWindow, "Piece placement unsuccessful, try again\n");
             continue;
         }
+        wrefresh(terminalWindow);
     }
 
-    printw("Placing enemy pieces...\n");
+    wprintw(terminalWindow, "Placing enemy pieces...\n");
     for (int i = 0; i < game.enemyPieces.size(); i++) {
         std::random_device rd;
         std::mt19937 gen(rd());
-        std::uniform_int_distribution disX(0, game.boardWidth);
+        std::uniform_int_distribution disX(0, game.boardWidth-1);
         // std::uniform_int_distribution disY(0, 1);
         
-        if (game.addPiece(game.enemyPieces[i], disX(gen), 0)) {
-            printw("Enemy piece %d added.\n", i+1);
-            refresh();
+        if (game.addPiece(game.enemyPieces[i], disX(gen))) {
+            wprintw(terminalWindow, "Enemy piece %d added.\n", i+1);
+            wrefresh(terminalWindow);
         } else {
-            printw("Error, enemy piece #%d failed to be added to board, trying again", i+1);
+            wprintw(terminalWindow, "Error, enemy piece #%d failed to be added to board, trying again\n", i+1);
             i--;
         }
     }
@@ -302,7 +331,7 @@ void runGame(GameInstance &game, bool startingPlayer) {
         refresh();
 
         if (game.turnCount % 2 == 1) {
-            printBoard(game.board, game.boardWidth, game.boardHeight, window);
+            printBoard(game.board, game.boardWidth, game.boardHeight, window, 2, 4);
             printw("Starting player turn...\n");
             printw("Player pieces: \n");
             refresh();
@@ -327,7 +356,7 @@ void runGame(GameInstance &game, bool startingPlayer) {
             for (Piece * piece : game.playerPieces) {
                 if (input-1 == piece->id) {
                     pieceFound = true;
-                    printValidTilesBoard(game.board, game.getValidMoves(piece), game.boardWidth, game.boardHeight);
+                    printValidTilesBoard(game.board, game.getValidMoves(piece), game.boardWidth, game.boardHeight, window);
                     int xin, yin;
                     printw("Enter x coordinate: ");
                     std::cin >> xin;

@@ -2,6 +2,7 @@
 #define GAMEINSTANCE_HPP
 
 #include <vector>
+#include <ncurses.h>
 
 #include "tiles.hpp"
 #include "pieces.hpp"
@@ -20,11 +21,10 @@ struct Move {
 class GameInstance {
     public:
         // Constructor
-        GameInstance(unsigned int seed, BiomeType biome, MissionType mission, int octave, bool hasRoad);
+        GameInstance(unsigned long seed, BiomeType biome, MissionType mission, int octave, bool hasRoad);
 
-        // Public members of GameInstance,
-        // Public because information will be displayed to player
-        bool playerWin; // Not this one, this will do stuff in run
+        // Public Members of GameInstance, information available to players before initialization 
+        bool playerWin; // Not this one, this will do stuff in run 
         BiomeType biome;
         MissionType mission; 
         bool hasRoad; 
@@ -36,11 +36,11 @@ class GameInstance {
         std::vector<Tile> board;
         std::vector<Piece *> playerPieces;
         std::vector<Piece *> enemyPieces;
-        unsigned int seed;
+        unsigned long seed;
         int turnCount;
 
         // When a GameInstance is selected, makeGame actually generates the board
-        void makeGame(std::vector<Piece *> runPieces, std::vector<Piece *> enemyPieces);
+        void makeGame(std::vector<Piece *> runPieces, std::vector<Piece *> enemyPieces, WINDOW * window);
 
         // The turn functions, which alternates between the player turn and enemy turn
         int takePlayerTurn(Move move);
@@ -58,7 +58,7 @@ class GameInstance {
         // Methods to interact with pieces
         std::vector<Move> getValidMoves(Piece * piece);
         bool movePiece(Piece * piece, Tile * target);
-        bool addPiece(Piece * piece, int x, int y);
+        bool addPiece(Piece * piece, int tileIndex);
         bool pieceExists(Piece * piece);
 };
 

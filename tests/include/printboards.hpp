@@ -12,10 +12,21 @@ WINDOW * createNewWindow(int height, int width, int starty, int startx);
 
 void destroyWindow(WINDOW * window);
 
-// Function to print board to terminal, for testing purposes
-void printBoard(std::vector<Tile> &board, int width, int height);
+void initColors();
 
-void printValidTilesBoard(std::vector<Tile> &board, std::vector<Move> moves, int width, int height);
+// Function to print board to terminal, for testing purposes
+void printBoard(const std::vector<Tile> &board, int width, int height, WINDOW * window, int cursorX, int cursorY);
+
+void printValidTilesBoard(std::vector<Tile> &board, std::vector<Move> moves, int width, int height, WINDOW * window);
+
+struct Symbol {
+    int terrainColor = 0;
+    int pieceColor = 0;
+    char pieceSymbol = ' ';
+};
+
+// Gets the symbol and colors for a tile as a the above structure
+Symbol getSymbol(const Tile &tile);
 
 // Gets a piece's type as a string
 std::string getPieceType(const Piece * piece);
@@ -23,11 +34,8 @@ std::string getPieceType(const Piece * piece);
 // Gets a biome's type as a string
 std::string getBiomeType(const BiomeType biome);
 
-// Gets the symbol for a tile as a string depending on tile terrain and occupying piece
-std::string getTileSymbol(const Tile &tile);
-
 // Function to set up a game instance, prompting user for piece placement
-void setupGame(GameInstance &game);
+void setupGame(GameInstance &game, WINDOW * terminalWindow);
 
 // Function to get user input for a game instance
 void runGame(GameInstance &game, bool startingPlayer);

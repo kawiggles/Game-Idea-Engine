@@ -13,49 +13,60 @@ int main() {
     noecho();
     cbreak();
     keypad(stdscr, TRUE);
-    start_color();
+    initColors();
 
-    printw("Starting Chess 2...\n");
+    int terminalHeight = LINES/2;
+    int terminalStartY = LINES - terminalHeight;
+    WINDOW * terminalWindow = newwin(terminalHeight, COLS, terminalStartY, 0);
+    mvwhline(terminalWindow, 0, 0, ACS_HLINE, COLS);
+    keypad(terminalWindow, TRUE);
+    scrollok(terminalWindow, TRUE);
+    refresh();
+    wrefresh(terminalWindow);
+
+    wmove(terminalWindow, 1, 0);
+    wprintw(terminalWindow, "Starting Chess 2...\n");
     unsigned int testSeed;
     std::string seedInput = "";
-    printw("Enter seed (leave blank for random): ");
-    refresh();
+    wprintw(terminalWindow, "Enter seed (leave blank for random): ");
+    wrefresh(terminalWindow);
     int ch;
-    while ((ch = getch()) != '\n') {
+    while ((ch = wgetch(terminalWindow)) != '\n') {
         if (ch == KEY_BACKSPACE || ch == 263) {
             if (!seedInput.empty()) {
                 seedInput.pop_back();
                 int y, x;
-                getyx(stdscr, y, x);
-                mvprintw(y, x-1, " ");
-                move(y, x-1);
-                refresh();
+                getyx(terminalWindow, y, x);
+                mvwprintw(terminalWindow, y, x-1, " ");
+                wmove(terminalWindow, y, x-1);
+                wrefresh(terminalWindow);
             }
         } else if (ch >= '0' && ch <= '9') {
             seedInput += (char)ch;
-            addch(ch);
-            refresh();
+            waddch(terminalWindow, ch);
+            wrefresh(terminalWindow);
         }
     }
 
     if (seedInput.empty()) {
         std::random_device rd;
         testSeed = rd();
-        printw("Seed: %u\n", testSeed);
+        wprintw(terminalWindow, "\nSeed: %u\n", testSeed);
     } else {
         try {
             testSeed = stoul(seedInput);
+            wprintw(terminalWindow, "\nSeed: %u\n", testSeed);
         } catch (...) {
             std::random_device rd;
             testSeed = rd();
-            printw("Seed: %u\n", testSeed);
+            wprintw(terminalWindow, "\nSeed: %u\n", testSeed);
         }
     }
 
     std::mt19937 gen(testSeed);
-    std::uniform_int_distribution<unsigned int> distribution;
-    unsigned int gameSeed = distribution(gen);
-    printw("Game seed: %u\n", gameSeed);
+    std::uniform_int_distribution<unsigned long> distribution;
+    unsigned long gameSeed = distribution(gen);
+    wprintw(terminalWindow, "Game seed: %lu\n", gameSeed);
 
     // Create arrays of test of pieces
     std::vector<Piece *> testPlayerPieces;
@@ -76,25 +87,30 @@ int main() {
     // Make a new game instance
     std::uniform_int_distribution<int> biomeDist(0, 4);
     BiomeType randomBiome = static_cast<BiomeType>(biomeDist(gen));
-    printw("Biome: %s\n", getBiomeType(randomBiome).c_str());
+    wprintw(terminalWindow, "Biome: %s\n", getBiomeType(randomBiome).c_str());
 
     std::uniform_int_distribution<int> octaveDist(1, 3);
     int randomOctave = octaveDist(gen);
-    printw("Perlin noise octave: %d\n", randomOctave);
+    wprintw(terminalWindow, "Perlin noise octave: %d\n", randomOctave);
 
     std::uniform_int_distribution<int> roadDist(0, 1);
     bool roadBool = roadDist(gen);
-    if (roadBool) printw("Board has road\n");
+    if (roadBool) wprintw(terminalWindow, "Board has road\n");
 
-    printw("Press Enter to generate game instance...\n");
-    getch();
-    refresh();
+    wprintw(terminalWindow, "Press Enter to generate game instance...\n");
+    wgetch(terminalWindow);
+    wrefresh(terminalWindow);
 
     GameInstance testGame(gameSeed, randomBiome, MissionType::HoldThePoint, randomOctave, roadBool);
-    testGame.makeGame(testPlayerPieces, testEnemyPieces);
-    setupGame(testGame);
+    wprintw(terminalWindow, "Game Instance intitalized\n");
+    wrefresh(terminalWindow);
+    testGame.makeGame(testPlayerPieces, testEnemyPieces, terminalWindow);
+    wprintw(terminalWindow, "Game Instance made, setting up game\n");
+    wrefresh(terminalWindow);
+    setupGame(testGame, terminalWindow);
     runGame(testGame, true);
 
+    destroyWindow(terminalWindow);
     endwin();
     return 0;
 }

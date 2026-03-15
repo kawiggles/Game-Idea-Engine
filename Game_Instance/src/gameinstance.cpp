@@ -29,7 +29,7 @@
  * Then, takeTurn handles the turn by turn logic, which are repeated instances of movePiece.
  */
 
-GameInstance::GameInstance(unsigned int seed, BiomeType biome, MissionType mission, int octave, bool hasRoad) {
+GameInstance::GameInstance(unsigned long seed, BiomeType biome, MissionType mission, int octave, bool hasRoad) {
     this->biome = biome;
     this->mission = mission;
     this->octave = octave;
@@ -42,10 +42,9 @@ GameInstance::GameInstance(unsigned int seed, BiomeType biome, MissionType missi
     boardWidth = dis(gen);
 }
 
-void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *> enemyPieces) {
-    printw("Generating game instance...\n");
-    printw("Generating board of dimensions %d by %d.\n", boardWidth, boardHeight);
-    std::vector<Tile> board;
+void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *> enemyPieces, WINDOW * window) {
+    wprintw(window, "Generating game instance...\n");
+    wprintw(window, "Generating board of dimensions %d by %d.\n", boardWidth, boardHeight);
     board.reserve(boardWidth * boardHeight); 
 
     std::mt19937 gen(seed);
@@ -63,10 +62,10 @@ void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *>
             // (x, y), terrain type, and null pointer representing no occupying piece
         }
     }
-    printw("Base board generated\n");
+    wprintw(window, "Base board generated\n");
 
     if (hasRoad) {
-        printw("Generating road.\n");
+        wprintw(window, "Generating road.\n");
         Tile * startRoad;
         Tile * endRoad;
         std::uniform_int_distribution<int> roadDis(0, boardWidth-1);
@@ -82,31 +81,31 @@ void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *>
         } while (endRoad->terrain != TerrainType::Field && startRoad->terrain != TerrainType::Forest);
 
         std::vector<Tile *> road;
-        if (startRoad != nullptr && endRoad != nullptr) road = generateRoad(startRoad, endRoad, board, boardWidth, boardHeight);
+        if (startRoad != nullptr && endRoad != nullptr) road = generateRoad(startRoad, endRoad, board, boardWidth, boardHeight, window);
         for (Tile * tile : road) {
             if (tile != nullptr) {
                 tile->terrain = TerrainType::Road;
             }
         }
-        printw("Road generated\n");
+        wprintw(window, "Road generated\n");
     }
 
     switch (mission) {
         case MissionType::HoldThePoint: {
-            printw("Mission type is Hold the Point\n");
-            std::uniform_int_distribution<int> xDist(0, boardWidth);
-            std::uniform_int_distribution<int> yDist(4, boardHeight-4);
+            wprintw(window, "Mission type is Hold the Point\n");
+            std::uniform_int_distribution<int> xDist(0, boardWidth-1);
+            int margin = boardHeight/4;
+            std::uniform_int_distribution<int> yDist(margin, boardHeight-margin-1);
             int objX = xDist(gen);
             int objY = yDist(gen);
             board[objY * boardWidth + objX].terrain = TerrainType::Objective;
             break;
         }
         default:
-            printw("Error, no mission type for the Game Instance\n");
+            wprintw(window, "Error, no mission type for the Game Instance\n");
     }
 
-    printw("Copying board and pieces to game instance...\n");
-    this->board = std::move(board);
+    wprintw(window, "Copying board and pieces to game instance...\n");
     this->playerPieces = runPieces; 
     this->enemyPieces = enemyPieces;
 }
@@ -135,8 +134,8 @@ bool GameInstance::pieceExists(Piece * piece) {
     return false;
 }
 
-bool GameInstance::addPiece(Piece * piece, int x, int y) {
-    if (x < 0 || y < 0 || x >= boardWidth || y >= boardHeight) {
+bool GameInstance::addPiece(Piece * piece, int tileIndex) {
+    if (tileIndex > board.size()) {
         printw("Fail, coordinates out of bounds\n");
         return false; // Fail condition 1, out of bounds
     }
@@ -146,7 +145,7 @@ bool GameInstance::addPiece(Piece * piece, int x, int y) {
         return false; // Fail condition 2, piece not in game
     }
 
-    Tile * tile = getTile(x, y);
+    Tile * tile = &board[tileIndex];
     if (tile->occupyingPiece != nullptr) {
         printw("Fail, tile already occupied\n");
         return false;
