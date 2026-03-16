@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <random>
 #include <ncurses.h>
+#include <memory>
 
 int main() {
     initscr();
@@ -70,20 +71,20 @@ int main() {
     wprintw(terminalWindow, "Game seed: %lu\n", gameSeed);
 
     // Create arrays of test of pieces
-    std::vector<Piece *> testPlayerPieces;
-    testPlayerPieces.push_back(new Piece(PieceMaterial::Wood, PieceType::Light, true));
-    testPlayerPieces.push_back(new Piece(PieceMaterial::Wood, PieceType::Light, true));
-    testPlayerPieces.push_back(new Piece(PieceMaterial::Wood, PieceType::Elite, true));
-    testPlayerPieces.push_back(new Piece(PieceMaterial::Stone, PieceType::LCavalry, true));
-    testPlayerPieces.push_back(new Piece(PieceMaterial::Stone, PieceType::LCavalry, true));
+    std::vector<std::unique_ptr<Piece>> testPlayerPieces;
+    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, true));
+    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, true));
+    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Elite, true));
+    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Stone, PieceType::LCavalry, true));
+    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Stone, PieceType::LCavalry, true));
     
     
-    std::vector<Piece *> testEnemyPieces;
-    testEnemyPieces.push_back(new Piece(PieceMaterial::Wood, PieceType::Light, false));
-    testEnemyPieces.push_back(new Piece(PieceMaterial::Wood, PieceType::Shield, false));
-    testEnemyPieces.push_back(new Piece(PieceMaterial::Wood, PieceType::Elite, false));
-    testEnemyPieces.push_back(new Piece(PieceMaterial::Wood, PieceType::Light, false));
-    testEnemyPieces.push_back(new Piece(PieceMaterial::Wood, PieceType::Shield, false));
+    std::vector<std::unique_ptr<Piece>> testEnemyPieces;
+    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, false));
+    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Shield, false));
+    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Elite, false));
+    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, false));
+    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Shield, false));
     
     // Make a new game instance
     std::uniform_int_distribution<int> biomeDist(0, 4);
@@ -105,7 +106,7 @@ int main() {
     GameInstance testGame(gameSeed, randomBiome, MissionType::HoldThePoint, randomOctave, roadBool);
     wprintw(terminalWindow, "Game Instance intitalized\n");
     wrefresh(terminalWindow);
-    testGame.makeGame(testPlayerPieces, testEnemyPieces, terminalWindow);
+    testGame.makeGame(std::move(testPlayerPieces), std::move(testEnemyPieces), terminalWindow);
     wprintw(terminalWindow, "Game Instance made, setting up game\n");
     wrefresh(terminalWindow);
     setupGame(testGame, terminalWindow);

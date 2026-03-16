@@ -353,7 +353,7 @@ void setupGame(GameInstance &game, WINDOW * terminalWindow) {
     wrefresh(terminalWindow);
     
     for (int i = 0; i < game.playerPieces.size(); i++) {
-        Piece * piece = game.playerPieces[i];
+        Piece * piece = game.playerPieces[i].get();
         wprintw(terminalWindow, "Placing piece %d of %lu:\n", i+1, game.playerPieces.size());
         wprintw(terminalWindow, "    Piece type: %s\n", getPieceType(piece).c_str()); 
 
@@ -393,7 +393,7 @@ void setupGame(GameInstance &game, WINDOW * terminalWindow) {
         std::uniform_int_distribution disX(0, game.boardWidth-1);
         // std::uniform_int_distribution disY(0, 1);
         
-        if (game.addPiece(game.enemyPieces[i], disX(gen))) {
+        if (game.addPiece(game.enemyPieces[i].get(), disX(gen))) {
             wprintw(terminalWindow, "Enemy piece %d added.\n", i+1);
             wrefresh(terminalWindow);
         } else {
@@ -425,10 +425,10 @@ void runGame(GameInstance &game, bool startingPlayer, WINDOW * terminalWindow) {
                         // 4: quit
 
     auto getUserInput = [&game, terminalWindow, boardWindow, &cursorX, &cursorY](bool valid, Piece * piece) {
-        (valid) ? printValidTilesBoard(game.board, game.getValidMoves(piece), game.boardWidth, game.boardHeight, boardWindow, cursorX, cursorY) : printBoard(game.board, game.boardWidth, game.boardHeight, boardWindow, cursorX,  cursorY);
+        (valid) ? printValidTilesBoard(game.board, game.getValidMoves(*piece), game.boardWidth, game.boardHeight, boardWindow, cursorX, cursorY) : printBoard(game.board, game.boardWidth, game.boardHeight, boardWindow, cursorX,  cursorY);
         int ch;      
         do { 
-            (valid) ? printValidTilesBoard(game.board, game.getValidMoves(piece), game.boardWidth, game.boardHeight, boardWindow, cursorX, cursorY) : printBoard(game.board, game.boardWidth, game.boardHeight, boardWindow, cursorX,  cursorY);
+            (valid) ? printValidTilesBoard(game.board, game.getValidMoves(*piece), game.boardWidth, game.boardHeight, boardWindow, cursorX, cursorY) : printBoard(game.board, game.boardWidth, game.boardHeight, boardWindow, cursorX,  cursorY);
             ch = wgetch(terminalWindow);
             switch (ch) {
                 case KEY_UP:
@@ -476,7 +476,7 @@ void runGame(GameInstance &game, bool startingPlayer, WINDOW * terminalWindow) {
                 wprintw(terminalWindow, "Select a tile to move to...\n");
                 wrefresh(terminalWindow);
                 coordInput = getUserInput(true, piece);
-                selectedMove = Move{MoveType::Move, game.getPieceTile(piece), &game.board[coordInput]};
+                selectedMove = Move{MoveType::Move, game.getPieceTile(*piece), &game.board[coordInput]};
                 moveSuccess = true;
             }
             (moveSuccess) ? gameStatus = game.takePlayerTurn(selectedMove) : gameStatus = 0;

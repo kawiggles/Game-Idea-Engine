@@ -8,6 +8,7 @@
 #include <ncurses.h>
 #include <vector>
 #include <random>
+#include <memory>
 
 /* 
  * This file details the methods of the GameInstance object, which handles the logic for running a Game Instance.
@@ -26,7 +27,9 @@
  * The properties are used to display information about a Game Instance before it is selected.
  * When a Game Instance is selected it uses the makeGame function to actually generate the game board and copy the player's run pieces.
  * From there, setupGame (external function) is used to prompt the player for where to addPiece(s).
- * Then, takeTurn handles the turn by turn logic, which are repeated instances of movePiece.
+ * Then, takePlayerTurn and takeEnemyTurn handle turn by turn logic, which are repeated instances of movePiece, shootPiece, or capturePiece.
+ * These functions are likewise controlled by an external function, runGame, which calls the game instance methods using user input.
+ * getValidTiles is the main game logic function. It handles rune logic, movement logic (terrain and piece capture), and action logic.
  */
 
 GameInstance::GameInstance(unsigned long seed, BiomeType biome, MissionType mission, int octave, bool hasRoad) {
@@ -36,13 +39,14 @@ GameInstance::GameInstance(unsigned long seed, BiomeType biome, MissionType miss
     this->seed = seed;
     this->hasRoad = hasRoad;
 
-    std::mt19937 gen(seed); // Random width and height
+    std::mt19937 gen(seed);
     std::uniform_int_distribution<int> dis(6, 10);
     boardHeight = dis(gen);
     boardWidth = dis(gen);
 }
 
-void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *> enemyPieces, WINDOW * window) {
+// Remember to get rid of the window parameter when we move from ncurses
+void GameInstance::makeGame(std::vector<std::unique_ptr<Piece>>&& runPieces, std::vector<std::unique_ptr<Piece>>&& enemyPieces, WINDOW * window) {
     wprintw(window, "Generating game instance...\n");
     wprintw(window, "Generating board of dimensions %d by %d.\n", boardWidth, boardHeight);
     board.reserve(boardWidth * boardHeight); 
@@ -78,7 +82,7 @@ void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *>
         do {
             int roadStartX = roadDis(gen);
             endRoad = &board[boardWidth * (boardHeight-1) + roadStartX];
-        } while (endRoad->terrain != TerrainType::Field && startRoad->terrain != TerrainType::Forest);
+        } while (endRoad->terrain != TerrainType::Field && endRoad->terrain != TerrainType::Forest);
 
         std::vector<Tile *> road;
         if (startRoad != nullptr && endRoad != nullptr) road = generateRoad(startRoad, endRoad, board, boardWidth, boardHeight, window);
@@ -106,8 +110,8 @@ void GameInstance::makeGame(std::vector<Piece *> runPieces, std::vector<Piece *>
     }
 
     wprintw(window, "Copying board and pieces to game instance...\n");
-    this->playerPieces = runPieces; 
-    this->enemyPieces = enemyPieces;
+    this->playerPieces = std::move(runPieces); 
+    this->enemyPieces = std::move(enemyPieces);
 }
 
 Tile * GameInstance::getTile(int x, int y) {
@@ -119,23 +123,15 @@ Tile * GameInstance::getTile(int x, int y) {
 
 bool GameInstance::pieceExists(Piece * piece) {
     if (piece->ownedByPlayer) {
-        for (Piece * p : playerPieces) {
-            if (p == piece) {
-                return true;
-            }
-        }
+        for (const std::unique_ptr<Piece> &p : playerPieces) if (p.get() == piece) return true;
     } else {
-        for (Piece * p : enemyPieces) {
-            if (p == piece) {
-                return true;
-            }
-        }
+        for (const std::unique_ptr<Piece> &p : enemyPieces) if (p.get() == piece) return true;
     }
     return false;
 }
 
 bool GameInstance::addPiece(Piece * piece, int tileIndex) {
-    if (tileIndex > board.size()) {
+    if (tileIndex >= board.size()) {
         printw("Fail, coordinates out of bounds\n");
         return false; // Fail condition 1, out of bounds
     }
@@ -156,25 +152,22 @@ bool GameInstance::addPiece(Piece * piece, int tileIndex) {
     } // Fail condition 4, tile invalid
 
     tile->occupyingPiece = piece;
+    piece->onBoard = true;
     return true;
 }
 
-Tile * GameInstance::getPieceTile(Piece * piece) {
-    for (Tile &t : board) {
-        if (t.occupyingPiece == piece) {
-            return &t;
-        }
-    }
+Tile * GameInstance::getPieceTile(const Piece &piece) {
+    for (Tile &t : board) if (t.occupyingPiece == &piece) return &t;
     return nullptr;
 }
 
 // This function creates an array of valid move structs for a passed piece object 
-std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
+std::vector<Move> GameInstance::getValidMoves(const Piece &piece) {
     Tile * currentTile = getPieceTile(piece);    
 
-    int cardinalMax = piece->maxCardinal;
-    int diagonalMax = piece->maxDiagonal; 
-    int relativeStrength = piece->strength; 
+    int cardinalMax = piece.maxCardinal;
+    int diagonalMax = piece.maxDiagonal; 
+    int relativeStrength = piece.strength; 
 
     std::vector<Move> validTiles;
     validTiles.reserve((cardinalMax * 4) + (diagonalMax * 4)); 
@@ -191,12 +184,10 @@ std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
     };
 
     for (int i = 0; i < 8; i++) {
-            bool stopMove = false;
-            int cardinalEval = cardinalMax;
-            int diagonalEval = diagonalMax;
-        for (int j = 1; (i < 4) ? j <= cardinalEval : j <= diagonalEval; j++) { 
+        bool stopMove = false;
+        int cardinalEval = cardinalMax, diagonalEval = diagonalMax;
         // j iterates through tiles on that vector. The ternary operator in the middle of this loop determines if the number of tiles iterated through is limited by the cardinalEval or diagonalEval value, corresponding with the array of vectors. 
-
+        for (int j = 1; (i < 4) ? j <= cardinalEval : j <= diagonalEval; j++) { 
             Tile * checkTile = getTile(currentTile->x + (vectors[i][0]*j), currentTile->y + (vectors[i][1]*j));
             if (!checkTile) break; // Fail case if tile doesn't exist
             
@@ -205,20 +196,19 @@ std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
             int relativeStrengthMod = 0;
 
             switch (checkTile->terrain) {
-                case TerrainType::Field:
-                    break;
+                case TerrainType::Field: break;
                 case TerrainType::Forest:
-                    if ((piece->category == PieceCategory::Cavalry && 
-                         piece->type != PieceType::LCavalry) || 
-                         piece->category == PieceCategory::Siege) (i < 4) ? cardinalEval-- : diagonalEval--;
+                    if ((piece.category == PieceCategory::Cavalry && 
+                         piece.type != PieceType::LCavalry) || 
+                         piece.category == PieceCategory::Siege) (i < 4) ? cardinalEval-- : diagonalEval--;
                     relativeToughnessMod++;
                     break;
                 case TerrainType::Water:
                     stopMove = true;
                     break;
                 case TerrainType::Mountain:
-                    if (piece->category == PieceCategory::Cavalry || 
-                        piece->category == PieceCategory::Siege) {
+                    if (piece.category == PieceCategory::Cavalry || 
+                        piece.category == PieceCategory::Siege) {
                         stopMove = true;
                     } else {
                         (i < 4) ? cardinalEval-- : diagonalEval--;
@@ -226,23 +216,22 @@ std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
                     relativeStrengthMod++;
                     break;
                 case TerrainType::Road: {
-                    Tile * nextTile = getTile(checkTile->x + vectors[i][0], checkTile->y + vectors[i][0]);
+                    Tile * nextTile = getTile(checkTile->x + vectors[i][0], checkTile->y + vectors[i][1]);
                     if (nextTile != nullptr &&
                         nextTile->terrain != TerrainType::Water &&
                         nextTile->terrain == TerrainType::Road) (i < 4) ? cardinalEval++ : diagonalEval++; // Beautiful
-                    break;
-                    }
+                    break; }
                 case TerrainType::Desert:
                     relativeToughnessMod--;
                     (i < 4) ? cardinalEval-- : diagonalEval--;
                     break;
                 case TerrainType::Jungle:
-                    if (piece->category == PieceCategory::Siege) {
+                    if (piece.category == PieceCategory::Siege) {
                         stopMove = true;
                         break;
                     }
-                    if (!(piece->type == PieceType::Light)) (i < 4) ? cardinalEval-- : diagonalEval--;
-                    if (piece->category == PieceCategory::Cavalry) (i < 4) ? cardinalEval-- : diagonalEval--;
+                    if (!(piece.type == PieceType::Light)) (i < 4) ? cardinalEval-- : diagonalEval--;
+                    if (piece.category == PieceCategory::Cavalry) (i < 4) ? cardinalEval-- : diagonalEval--;
                     relativeToughnessMod++;
                     break;
                 case TerrainType::Peak:
@@ -257,25 +246,23 @@ std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
                 case TerrainType::Tundra:
                     break;
                 case TerrainType::Objective:
-                    if (relativeStrength < 2) stopMove = true;
                     relativeToughnessMod++;
                     break;
             }
 
-            // Piece capture logic Here
             if ((i < 4) ? j > cardinalEval : j > diagonalEval) break;
             if (stopMove == true) break;
 
+            // Piece capture logic Here
             if (checkTile->occupyingPiece) { 
-                if (checkTile->occupyingPiece->ownedByPlayer == piece->ownedByPlayer) { 
-                    if (piece->canMoveThroughPieces) {
+                if (checkTile->occupyingPiece->ownedByPlayer == piece.ownedByPlayer) { 
+                    if (piece.canMoveThroughPieces) {
                         continue;
                     } else {
                         break;
                     }
                 } else {
                     int relativeToughness = checkTile->occupyingPiece->toughness + relativeToughnessMod;
-
                     if (relativeStrength + relativeStrengthMod >= relativeToughness) {
                         validTiles.push_back(Move{MoveType::Move, currentTile, checkTile});
                         break;
@@ -306,22 +293,17 @@ bool GameInstance::movePiece(Piece * piece, Tile * target) {
         return false; // Fail condition 2, piece not in game
     }
 
-    Tile * currentTile = getPieceTile(piece);
-    std::vector<Move> validTiles = getValidMoves(piece);
-
-    if (!currentTile->occupyingPiece) {
+    Tile * currentTile = getPieceTile(*piece);
+    if (!currentTile->occupyingPiece->onBoard) {
         printw("Fail, piece not on board\n");
         return false; // Fail condition 3, piece not on board
     }
 
+    std::vector<Move> validTiles = getValidMoves(*piece);
+
     for (int i = 0; i < validTiles.size(); i++) {
         if (target == validTiles[i].to) {
-            int index = 0;
-            if (target->occupyingPiece) {
-                auto &pieces = target->occupyingPiece->ownedByPlayer ? playerPieces : enemyPieces;
-                auto it = std::find(pieces.begin(), pieces.end(), target->occupyingPiece);
-                if (it != pieces.end()) pieces.erase(it);
-            }
+            if (target->occupyingPiece) target->occupyingPiece->onBoard = false;
             currentTile->occupyingPiece = nullptr;
             target->occupyingPiece = piece;
             printw("Piece moved from (%d, %d) to (%d ,%d)\n", currentTile->x+1, currentTile->y+1, target->x+1, target->y+1);
@@ -361,7 +343,6 @@ int GameInstance::isMissionComplete() {
 }
 
 int GameInstance::takePlayerTurn(Move move) {
-    int turnStatus = 0;
     bool moveComplete = false;
     switch (move.type) {
         case MoveType::Move: 
@@ -370,6 +351,9 @@ int GameInstance::takePlayerTurn(Move move) {
             break;
         case MoveType::Shoot:
             printw("Attempting to shoot\n");
+            break;
+        case MoveType::Capture:
+            printw("Attempting to capture objective\n");
             break;
         default:
             printw("Error, move type not recognized\n");
@@ -381,14 +365,13 @@ int GameInstance::takePlayerTurn(Move move) {
 
 int GameInstance::takeEnemyTurn() {
     std::vector<Move> allEnemyMoves;
-    for (Piece * piece : enemyPieces) {
-        std::vector<Move> pieceValidMoves = getValidMoves(piece);
+    for (const std::unique_ptr<Piece> &piece : enemyPieces) {
+        std::vector<Move> pieceValidMoves = getValidMoves(*piece);
         allEnemyMoves.insert(allEnemyMoves.end(), pieceValidMoves.begin(), pieceValidMoves.end());
     }
     
     Move move = enemyAlgoRandom(allEnemyMoves, board);
 
-    int turnStatus = 0;
     bool moveComplete = false;
     switch (move.type) {
         case MoveType::Move: 
@@ -397,6 +380,9 @@ int GameInstance::takeEnemyTurn() {
             break;
         case MoveType::Shoot:
             printw("Enemy attempting to shoot\n");
+            break;
+        case MoveType::Capture:
+            printw("Enemy attempting to capture objective\n");
             break;
         default:
             printw("Error, enemy move type not recognized\n");

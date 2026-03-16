@@ -5,8 +5,8 @@
 #include <ncurses.h>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include <queue>
-#include <algorithm>
 
 /*
  * Tiles are the main structure referenced by GameInstance methods.
@@ -85,7 +85,7 @@ std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<T
         }
     };
 
-    // Get's all cardinally neighboring tiles by index
+    // Gets all cardinally neighboring tiles by index
     auto getNeighbors = [width, height] (Tile &tile) {
         std::vector<int> neighbors;
         int vectors[4][2] = { { 1, 0},
@@ -102,7 +102,7 @@ std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<T
         return neighbors;
     };
 
-    // A* Search Algorithm, comments detail associated pseudocode from wikipedia (thank's wikipedia)
+    // A* Search Algorithm, comments detail associated pseudocode from wikipedia (thanks wikipedia)
     int startTileId = getTileId(startTile);
 
     std::unordered_map<int, int> closedList; // cameFrom := an empty map
@@ -118,10 +118,10 @@ std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<T
 
     // This is also out of order because compare is needed to define a min sort priority queue, these are the only things "out of order"
     std::priority_queue<int, std::vector<int>, decltype(compare)> openSet(compare); 
-    std::vector<int> checkSet; // for checking contents of openSet
+    std::unordered_set<int> checkSet; // for checking contents of openSet
 
     openSet.push(startTileId); // openSet := {start}
-    checkSet.push_back(startTileId);
+    checkSet.insert(startTileId);
     
     wprintw(window, "Algorithm initiated at (%d, %d)\n", startTile->x+1, startTile->y+1);
     wprintw(window, "Algorithm target is (%d, %d)\n", endTile->x+1, endTile->y+1);
@@ -142,19 +142,19 @@ std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<T
         }        
         
         openSet.pop(); // openSet.Remove(current)
-        checkSet.erase(find(checkSet.begin(), checkSet.end(), current)); // remove current from the check set
+        checkSet.erase(current); // remove current from the check set
         
         std::vector<int> neighbors = getNeighbors(board[current]);
         for (int i = 0; i < neighbors.size(); i++) { // for each neighbor of current
-            int tenativeG = gScore[current] + getCost(board[neighbors[i]].terrain); // tenative_gScore := gScore[current] + d(current, neighbor) 
-            if (gScore.find(neighbors[i]) == gScore.end() || tenativeG < gScore[neighbors[i]]) { // if tenative_gScore > gScore[neighbor]
+            int tentativeG = gScore[current] + getCost(board[neighbors[i]].terrain); // tentative_gScore := gScore[current] + d(current, neighbor) 
+            if (gScore.find(neighbors[i]) == gScore.end() || tentativeG < gScore[neighbors[i]]) { // if tentative_gScore > gScore[neighbor]
                 closedList[neighbors[i]] = current; // cameFrom[neighbor] := current
-                gScore[neighbors[i]] = tenativeG; // gScore[neighbor] := tenative_gScore
-                fScore[neighbors[i]] = tenativeG + h(&board[neighbors[i]]); // fScore[neighbor] := tenative_gScore + h(neighbor)
+                gScore[neighbors[i]] = tentativeG; // gScore[neighbor] := tentative_gScore
+                fScore[neighbors[i]] = tentativeG + h(&board[neighbors[i]]); // fScore[neighbor] := tentative_gScore + h(neighbor)
                 
-                if (find(checkSet.begin(), checkSet.end(), neighbors[i]) == checkSet.end()) { // if neighbor not in openSet
+                if (checkSet.find(neighbors[i]) == checkSet.end()) { // if neighbor not in openSet
                     openSet.push(neighbors[i]); // openSet.add(neighbor)
-                    checkSet.push_back(neighbors[i]); // and same for the check set
+                    checkSet.insert(neighbors[i]); // and same for the check set
                 }
             }
 

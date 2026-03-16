@@ -1,6 +1,7 @@
 #ifndef GAMEINSTANCE_HPP
 #define GAMEINSTANCE_HPP
 
+#include <memory>
 #include <vector>
 #include <ncurses.h>
 
@@ -34,13 +35,13 @@ class GameInstance {
 
         // Private Members of GameInstance, make private later
         std::vector<Tile> board;
-        std::vector<Piece *> playerPieces;
-        std::vector<Piece *> enemyPieces;
+        std::vector<std::unique_ptr<Piece>> playerPieces;
+        std::vector<std::unique_ptr<Piece>> enemyPieces;
         unsigned long seed;
         int turnCount;
 
         // When a GameInstance is selected, makeGame actually generates the board
-        void makeGame(std::vector<Piece *> runPieces, std::vector<Piece *> enemyPieces, WINDOW * window);
+        void makeGame(std::vector<std::unique_ptr<Piece>>&& runPieces, std::vector<std::unique_ptr<Piece>>&& enemyPieces, WINDOW * window);
 
         // The turn functions, which alternates between the player turn and enemy turn
         int takePlayerTurn(Move move);
@@ -53,10 +54,10 @@ class GameInstance {
 
         // Two methods to get tiles, one from an (x,y) coordinate, and the other from a piece object.
         Tile * getTile(int x, int y);
-        Tile * getPieceTile(Piece * piece);
+        Tile * getPieceTile(const Piece &piece);
 
         // Methods to interact with pieces
-        std::vector<Move> getValidMoves(Piece * piece);
+        std::vector<Move> getValidMoves(const Piece &piece);
         bool movePiece(Piece * piece, Tile * target);
         bool addPiece(Piece * piece, int tileIndex);
         bool pieceExists(Piece * piece);

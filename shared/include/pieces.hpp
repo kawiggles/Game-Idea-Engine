@@ -22,6 +22,7 @@ struct Piece {
     PieceCategory category;
     
     // Stats
+    bool onBoard = false;
     bool ownedByPlayer = true;
     bool canMoveThroughPieces  = false;
     int strength = 0;
