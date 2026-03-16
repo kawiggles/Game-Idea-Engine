@@ -17,11 +17,12 @@ int main() {
 
     int terminalHeight = LINES/2;
     int terminalStartY = LINES - terminalHeight;
-    WINDOW * terminalWindow = newwin(terminalHeight, COLS, terminalStartY, 0);
-    mvwhline(terminalWindow, 0, 0, ACS_HLINE, COLS);
+    WINDOW * terminalBorder = newwin(terminalHeight, COLS, terminalStartY, 0);
+    mvwhline(terminalBorder, 0, 0, ACS_HLINE, COLS);
+    WINDOW * terminalWindow = derwin(terminalBorder, terminalHeight-1, COLS, 1, 0);
     keypad(terminalWindow, TRUE);
     scrollok(terminalWindow, TRUE);
-    refresh();
+    wrefresh(terminalBorder);
     wrefresh(terminalWindow);
 
     wmove(terminalWindow, 1, 0);
@@ -114,6 +115,7 @@ int main() {
     wgetch(terminalWindow);
 
     destroyWindow(terminalWindow);
+    destroyWindow(terminalBorder);
     endwin();
     return 0;
 }

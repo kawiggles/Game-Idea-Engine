@@ -262,7 +262,7 @@ std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
                     break;
             }
 
-            // Capture Logic Here
+            // Piece capture logic Here
             if ((i < 4) ? j > cardinalEval : j > diagonalEval) break;
             if (stopMove == true) break;
 
@@ -285,6 +285,8 @@ std::vector<Move> GameInstance::getValidMoves(Piece * piece) {
             } else {
                 validTiles.push_back(Move{MoveType::Move, currentTile, checkTile});
             }
+            
+            // Ranged attack logic
         }
     }
 

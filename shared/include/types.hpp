@@ -46,7 +46,8 @@ enum class PieceMaterial {
 
 enum class MoveType {
     Move,
-    Shoot
+    Shoot,
+    Capture
 };
 
 enum class TerrainType {
