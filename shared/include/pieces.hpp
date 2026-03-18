@@ -3,14 +3,7 @@
 
 #include "types.hpp"
 
-struct RuneSentence; // Forward declaration of Rune struct, which may or may not be used 
-
-struct RangedAttack {
-    int maxRange;
-    int minRange;
-    int strength;
-    bool canShootThroughPieces;
-};
+struct RuneSentence; // Forward declaration of Rune struct, which may or may not be used
 
 // The piece struct simply contains a bunch of values which various rules call to evaluate game actions
 // The piece struct is the only structure which is used by multiple "layers" of the game
@@ -20,15 +13,25 @@ struct Piece {
     PieceMaterial material;
     PieceType type;
     PieceCategory category;
-    
-    // Stats
     bool onBoard = false;
+    
+    // Movement Stats
     bool ownedByPlayer = true;
     bool canMoveThroughPieces  = false;
-    int strength = 0;
-    int toughness = 0;
-    int maxCardinal = 0;
-    int maxDiagonal = 0;
+    int strength = 1;
+    int toughness = 1;
+    int maxCardinal = 1;
+    int maxDiagonal = 1;
+
+    // Ranged Stats
+    struct RangedAttack {
+        int maxRange = 0;
+        int minRange = 0;
+        int strength = 0;
+        bool canShootThroughPieces = false;
+    };
+    bool hasRangedAttack = false;
+    RangedAttack rangedAttack;
 
     // Special Piece Attributes
     bool wizardRunes = false;

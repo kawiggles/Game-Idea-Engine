@@ -45,6 +45,7 @@ class GameInstance {
 
         // The turn functions, which alternates between the player turn and enemy turn
         int takePlayerTurn(Move move);
+        int setupEnemy();
         int takeEnemyTurn();
 
         // Function to check if a mission is complete
@@ -54,11 +55,15 @@ class GameInstance {
 
         // Two methods to get tiles, one from an (x,y) coordinate, and the other from a piece object.
         Tile * getTile(int x, int y);
+        int getTileId(const Tile &tile);
         Tile * getPieceTile(const Piece &piece);
 
         // Methods to interact with pieces
-        std::vector<Move> getValidMoves(const Piece &piece);
+        std::vector<Move> getValidMovement(const Piece &piece, Tile * currentTile, int relativeStrengthMod);
+        std::vector<Move> getValidRangedAttacks(const Piece &piece, Tile * currentTile, int relativeRangedStrenghtMod, int relativeRangeMax);
+        std::vector<Move> getValidMoves(const Piece &piece, MoveType type);
         bool movePiece(Piece * piece, Tile * target);
+        bool shootPiece(Piece * piece, Tile * targe);
         bool addPiece(Piece * piece, int tileIndex);
         bool pieceExists(Piece * piece);
 };

@@ -5,6 +5,7 @@
 #include "PerlinNoise.hpp"
 #include "enemy.hpp"
 
+#include <cstdlib>
 #include <ncurses.h>
 #include <vector>
 #include <random>
@@ -121,6 +122,10 @@ Tile * GameInstance::getTile(int x, int y) {
     return &board[(y * boardWidth) + x];
 }
 
+int GameInstance::getTileId(const Tile &tile) {
+    return tile.y * boardWidth + tile.x;
+}
+
 bool GameInstance::pieceExists(Piece * piece) {
     if (piece->ownedByPlayer) {
         for (const std::unique_ptr<Piece> &p : playerPieces) if (p.get() == piece) return true;
@@ -161,17 +166,8 @@ Tile * GameInstance::getPieceTile(const Piece &piece) {
     return nullptr;
 }
 
-// This function creates an array of valid move structs for a passed piece object 
-std::vector<Move> GameInstance::getValidMoves(const Piece &piece) {
-    Tile * currentTile = getPieceTile(piece);    
-
-    int cardinalMax = piece.maxCardinal;
-    int diagonalMax = piece.maxDiagonal; 
-    int relativeStrength = piece.strength; 
-
+std::vector<Move> GameInstance::getValidMovement(const Piece &piece, Tile * currentTile, int relativeStrengthMod) {
     std::vector<Move> validTiles;
-    validTiles.reserve((cardinalMax * 4) + (diagonalMax * 4)); 
-
     int vectors[8][2] = {
         { 1, 0}, // Right
         {-1, 0}, // Left
@@ -185,7 +181,7 @@ std::vector<Move> GameInstance::getValidMoves(const Piece &piece) {
 
     for (int i = 0; i < 8; i++) {
         bool stopMove = false;
-        int cardinalEval = cardinalMax, diagonalEval = diagonalMax;
+        int cardinalEval = piece.maxCardinal, diagonalEval = piece.maxDiagonal;
         // j iterates through tiles on that vector. The ternary operator in the middle of this loop determines if the number of tiles iterated through is limited by the cardinalEval or diagonalEval value, corresponding with the array of vectors. 
         for (int j = 1; (i < 4) ? j <= cardinalEval : j <= diagonalEval; j++) { 
             Tile * checkTile = getTile(currentTile->x + (vectors[i][0]*j), currentTile->y + (vectors[i][1]*j));
@@ -193,7 +189,6 @@ std::vector<Move> GameInstance::getValidMoves(const Piece &piece) {
             
             // Terrain Logic Here
             int relativeToughnessMod = 0;
-            int relativeStrengthMod = 0;
 
             switch (checkTile->terrain) {
                 case TerrainType::Field: break;
@@ -213,7 +208,7 @@ std::vector<Move> GameInstance::getValidMoves(const Piece &piece) {
                     } else {
                         (i < 4) ? cardinalEval-- : diagonalEval--;
                     }
-                    relativeStrengthMod++;
+                    relativeToughnessMod++;
                     break;
                 case TerrainType::Road: {
                     Tile * nextTile = getTile(checkTile->x + vectors[i][0], checkTile->y + vectors[i][1]);
@@ -263,7 +258,7 @@ std::vector<Move> GameInstance::getValidMoves(const Piece &piece) {
                     }
                 } else {
                     int relativeToughness = checkTile->occupyingPiece->toughness + relativeToughnessMod;
-                    if (relativeStrength + relativeStrengthMod >= relativeToughness) {
+                    if (piece.strength + relativeStrengthMod >= relativeToughness) {
                         validTiles.push_back(Move{MoveType::Move, currentTile, checkTile});
                         break;
                     }
@@ -272,9 +267,93 @@ std::vector<Move> GameInstance::getValidMoves(const Piece &piece) {
             } else {
                 validTiles.push_back(Move{MoveType::Move, currentTile, checkTile});
             }
-            
-            // Ranged attack logic
         }
+    }
+    return validTiles;
+}
+
+std::vector<Move> GameInstance::getValidRangedAttacks(const Piece &piece, Tile * currentTile, int relativeRangedStrengthMod, int relativeRangeMax) {
+    std::vector<Move> validTiles;
+    int evalMaxRange = piece.rangedAttack.maxRange + relativeRangeMax;
+    int evalRangedStrength = piece.rangedAttack.strength + relativeRangedStrengthMod;
+
+    for (int dx = -evalMaxRange; dx <= evalMaxRange; dx++) { 
+        for (int dy = -evalMaxRange; dy <= evalMaxRange; dy++) {
+            int nx = currentTile->x + dx;
+            int ny = currentTile->y + dy;
+            int dist = std::abs(dx) + std::abs(dy);
+
+            if (piece.rangedAttack.minRange <= dist && dist <= evalMaxRange) {
+                if (nx >= 0 && nx < boardWidth && ny >=0 && ny < boardHeight) {
+                    Tile * searchTile = getTile(nx, ny);
+                    if (searchTile->occupyingPiece && searchTile->occupyingPiece->ownedByPlayer != piece.ownedByPlayer) {
+                        if (evalRangedStrength >= searchTile->occupyingPiece->toughness) {
+                            validTiles.push_back(Move{MoveType::Shoot, currentTile, searchTile});
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return validTiles;
+}
+
+// This function creates an array of valid move structs for a passed piece object 
+std::vector<Move> GameInstance::getValidMoves(const Piece &piece, MoveType type) {
+    Tile * currentTile = getPieceTile(piece);    
+    int relativeStrengthMod = 0;
+    int relativeRangedStrengthMod = 0;
+    int relativeRangeMax = 0;
+    bool canCapture = false;
+    switch (currentTile->terrain) {
+        case TerrainType::Field: break;
+        case TerrainType::Forest:
+            if (piece.category != PieceCategory::Infantry) relativeStrengthMod++;
+            relativeStrengthMod++;
+            relativeRangedStrengthMod--;
+            break;
+        case TerrainType::Water: break;
+        case TerrainType::Mountain:
+            if (piece.category == PieceCategory::Siege) relativeRangedStrengthMod++;
+            relativeRangeMax++;
+            break;
+        case TerrainType::Road:
+            if (piece.category == PieceCategory::Cavalry) relativeStrengthMod++;
+            break; 
+        case TerrainType::Desert: break;
+        case TerrainType::Jungle:
+            if (!(piece.type == PieceType::Light ||
+                piece.type == PieceType::LCavalry)) relativeStrengthMod--;
+            relativeRangedStrengthMod--;
+            relativeRangeMax--;
+            break;
+        case TerrainType::Peak:
+            relativeRangeMax++;
+            relativeRangedStrengthMod++;
+            break;
+        case TerrainType::IceField:
+            break;
+        case TerrainType::SnowField:
+            break;
+        case TerrainType::Tundra:
+            break;
+        case TerrainType::Objective:
+            canCapture = true;
+            break;
+    }
+
+    // Rune Logic Happens Here
+    std::vector<Move> validTiles;
+    validTiles.reserve((piece.maxCardinal+3 * 4) + (piece.maxDiagonal+3 * 4) + (2 * piece.rangedAttack.maxRange+2 * piece.rangedAttack.maxRange+2 + 2 * piece.rangedAttack.maxRange+2 + 1)+1); // This is essentially and arbitrarily large number to reserve. 
+
+    if (type == MoveType::Any) {
+        for (Move move : getValidMovement(piece, currentTile, relativeStrengthMod)) validTiles.push_back(move);
+        for (Move move : getValidRangedAttacks(piece, currentTile, relativeRangedStrengthMod, relativeRangeMax)) validTiles.push_back(move);
+    } else if (type == MoveType::Move) {
+        for (Move move : getValidMovement(piece, currentTile, relativeStrengthMod)) validTiles.push_back(move);
+    } else if (type == MoveType::Shoot) {
+        for (Move move : getValidRangedAttacks(piece, currentTile, relativeRangedStrengthMod, relativeRangeMax)) validTiles.push_back(move);
     }
 
     return validTiles;
@@ -299,10 +378,10 @@ bool GameInstance::movePiece(Piece * piece, Tile * target) {
         return false; // Fail condition 3, piece not on board
     }
 
-    std::vector<Move> validTiles = getValidMoves(*piece);
+    std::vector<Move> validTiles = getValidMoves(*piece, MoveType::Move);
 
-    for (int i = 0; i < validTiles.size(); i++) {
-        if (target == validTiles[i].to) {
+    for (Move move : validTiles) {
+        if (target == move.to) {
             if (target->occupyingPiece) target->occupyingPiece->onBoard = false;
             currentTile->occupyingPiece = nullptr;
             target->occupyingPiece = piece;
@@ -314,6 +393,25 @@ bool GameInstance::movePiece(Piece * piece, Tile * target) {
     printw("Fail, invalid move.\n");
     printw("Target was: (%d, %d)\n", target->x+1, target->y+1); 
     return false; // Fail condition 4, rare exception
+}
+
+bool GameInstance::shootPiece(Piece * piece, Tile * target) {
+    if (!target) return false;
+
+    if (!pieceExists(piece)) return false;
+
+    Tile * currentTile = getPieceTile(*piece);
+    if (!currentTile->occupyingPiece->onBoard) return false;
+
+    std::vector<Move> validTiles = getValidMoves(*piece, MoveType::Shoot);
+    for (Move move : validTiles) {
+        if (target == move.to) {
+            move.to->occupyingPiece->onBoard = false;
+            move.to->occupyingPiece = nullptr;
+            return true;
+        }
+    }
+    return false;
 }
 
 int GameInstance::isMissionComplete() {
@@ -351,6 +449,7 @@ int GameInstance::takePlayerTurn(Move move) {
             break;
         case MoveType::Shoot:
             printw("Attempting to shoot\n");
+            moveComplete = !(move.to->occupyingPiece);
             break;
         case MoveType::Capture:
             printw("Attempting to capture objective\n");
@@ -363,13 +462,29 @@ int GameInstance::takePlayerTurn(Move move) {
     return isMissionComplete();
 }
 
+int GameInstance::setupEnemy() {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution disX(0, boardWidth - 1);
+
+    for (int i = 0; i < enemyPieces.size(); i++) {
+        if (addPiece(enemyPieces[i].get(), disX(gen))) continue;
+        i--;
+    }
+    return 1;
+}
+
 int GameInstance::takeEnemyTurn() {
     std::vector<Move> allEnemyMoves;
     for (const std::unique_ptr<Piece> &piece : enemyPieces) {
-        std::vector<Move> pieceValidMoves = getValidMoves(*piece);
-        allEnemyMoves.insert(allEnemyMoves.end(), pieceValidMoves.begin(), pieceValidMoves.end());
+        if (piece->onBoard) {
+            std::vector<Move> pieceValidMoves = getValidMoves(*piece, MoveType::Any);
+            allEnemyMoves.insert(allEnemyMoves.end(), pieceValidMoves.begin(), pieceValidMoves.end());
+        }
     }
     
+    if (allEnemyMoves.empty()) return 2;
+
     Move move = enemyAlgoRandom(allEnemyMoves, board);
 
     bool moveComplete = false;
@@ -380,6 +495,9 @@ int GameInstance::takeEnemyTurn() {
             break;
         case MoveType::Shoot:
             printw("Enemy attempting to shoot\n");
+            move.to->occupyingPiece->onBoard = false;
+            move.to->occupyingPiece = nullptr;
+            moveComplete = !(move.to->occupyingPiece);
             break;
         case MoveType::Capture:
             printw("Enemy attempting to capture objective\n");

@@ -4,7 +4,6 @@
 #include "printboards.hpp"
 
 #include <unordered_set>
-#include <random>
 #include <ncurses.h>
 /*
  * This is a temporary program which uses ncurses to represent the game state
@@ -262,7 +261,14 @@ void printValidTilesBoard(std::vector<Tile> &board, std::vector<Move> moves, int
     wclear(window);
     box(window, 0, 0);
     std::unordered_set<Tile *> moveSet(moves.size()); 
-    for (int i = 0; i < moves.size(); i++) moveSet.insert(moves[i].to);
+    std::unordered_set<Tile *> rangedSet(moves.size());
+    for (int i = 0; i < moves.size(); i++) {
+        if (moves[i].type == MoveType::Move) {
+            moveSet.insert(moves[i].to);
+        } else if (moves[i].type == MoveType::Shoot) {
+            rangedSet.insert(moves[i].to);
+        }
+    }
     
     int tileIndex = 0;
     mvwprintw(window, 1, 1, "    ");
@@ -294,7 +300,7 @@ void printValidTilesBoard(std::vector<Tile> &board, std::vector<Move> moves, int
                 continue;
             }
             wattron(window, COLOR_PAIR(symbol.terrainColor));
-            wprintw(window, "[ ");
+            (rangedSet.count(&board[tileIndex])) ? wprintw(window, "[x") : wprintw(window, "[ ");
             wattroff(window, COLOR_PAIR(symbol.terrainColor));
 
             if (tileIndex == cursorY * width + cursorX) {
@@ -350,13 +356,10 @@ void setupGame(GameInstance &game, WINDOW * terminalWindow) {
         return cursorY * game.boardWidth + cursorX;
     };
 
-    wrefresh(terminalWindow);
-    
     for (int i = 0; i < game.playerPieces.size(); i++) {
         Piece * piece = game.playerPieces[i].get();
         wprintw(terminalWindow, "Placing piece %d of %lu:\n", i+1, game.playerPieces.size());
         wprintw(terminalWindow, "    Piece type: %s\n", getPieceType(piece).c_str()); 
-
         wprintw(terminalWindow, "Select tile to place piece: ");
         wrefresh(terminalWindow);
 
@@ -387,20 +390,13 @@ void setupGame(GameInstance &game, WINDOW * terminalWindow) {
     }
 
     wprintw(terminalWindow, "Placing enemy pieces...\n");
-    for (int i = 0; i < game.enemyPieces.size(); i++) {
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_int_distribution disX(0, game.boardWidth-1);
-        // std::uniform_int_distribution disY(0, 1);
-        
-        if (game.addPiece(game.enemyPieces[i].get(), disX(gen))) {
-            wprintw(terminalWindow, "Enemy piece %d added.\n", i+1);
-            wrefresh(terminalWindow);
-        } else {
-            wprintw(terminalWindow, "Error, enemy piece #%d failed to be added to board, trying again\n", i+1);
-            i--;
-        }
+    int setup = game.setupEnemy();
+    if (setup == 1) {
+        wprintw(terminalWindow, "Enemy pieces successfully added.\n");
+    } else {
+        wprintw(terminalWindow, "Error, enemy piece failed to be added to board\n");
     }
+    wrefresh(terminalWindow);
 
     printBoard(game.board, game.boardWidth, game.boardHeight, boardWindow, 300, 300);
     wprintw(terminalWindow, "Game set up, press enter to begin game...");
@@ -425,10 +421,9 @@ void runGame(GameInstance &game, bool startingPlayer, WINDOW * terminalWindow) {
                         // 4: quit
 
     auto getUserInput = [&game, terminalWindow, boardWindow, &cursorX, &cursorY](bool valid, Piece * piece) {
-        (valid) ? printValidTilesBoard(game.board, game.getValidMoves(*piece), game.boardWidth, game.boardHeight, boardWindow, cursorX, cursorY) : printBoard(game.board, game.boardWidth, game.boardHeight, boardWindow, cursorX,  cursorY);
         int ch;      
         do { 
-            (valid) ? printValidTilesBoard(game.board, game.getValidMoves(*piece), game.boardWidth, game.boardHeight, boardWindow, cursorX, cursorY) : printBoard(game.board, game.boardWidth, game.boardHeight, boardWindow, cursorX,  cursorY);
+            (valid) ? printValidTilesBoard(game.board, game.getValidMoves(*piece, MoveType::Any), game.boardWidth, game.boardHeight, boardWindow, cursorX, cursorY) : printBoard(game.board, game.boardWidth, game.boardHeight, boardWindow, cursorX,  cursorY);
             ch = wgetch(terminalWindow);
             switch (ch) {
                 case KEY_UP:
@@ -460,7 +455,7 @@ void runGame(GameInstance &game, bool startingPlayer, WINDOW * terminalWindow) {
             wprintw(terminalWindow, "Select a piece to move (esc to quit)...\n");
 
             Move selectedMove;
-            bool moveSuccess = false;
+            bool moveSelected = false;
             int coordInput = getUserInput(false, nullptr);
             wrefresh(terminalWindow);
 
@@ -476,10 +471,23 @@ void runGame(GameInstance &game, bool startingPlayer, WINDOW * terminalWindow) {
                 wprintw(terminalWindow, "Select a tile to move to...\n");
                 wrefresh(terminalWindow);
                 coordInput = getUserInput(true, piece);
-                selectedMove = Move{MoveType::Move, game.getPieceTile(*piece), &game.board[coordInput]};
-                moveSuccess = true;
+                if (piece->hasRangedAttack) {
+                    wprintw(terminalWindow, "Press s to shoot or m to move: ");
+                    wrefresh(terminalWindow);
+                    int ch = wgetch(terminalWindow);
+                    if (ch == 's') {
+                        selectedMove = Move{MoveType::Shoot, game.getPieceTile(*piece), &game.board[coordInput]};
+                        moveSelected = true;
+                    } else if (ch == 'm') {
+                        selectedMove = Move{MoveType::Move, game.getPieceTile(*piece), &game.board[coordInput]};
+                        moveSelected = true;
+                    }
+                } else {
+                    selectedMove = Move{MoveType::Move, game.getPieceTile(*piece), &game.board[coordInput]};
+                    moveSelected = true;
+                }
             }
-            (moveSuccess) ? gameStatus = game.takePlayerTurn(selectedMove) : gameStatus = 0;
+            gameStatus = (moveSelected) ? game.takePlayerTurn(selectedMove) : 0;
         } else {
             wprintw(terminalWindow, "Enemy taking turn...\n");
             wrefresh(terminalWindow);
