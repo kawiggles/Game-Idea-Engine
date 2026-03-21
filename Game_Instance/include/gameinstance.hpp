@@ -62,9 +62,9 @@ class GameInstance {
         std::vector<Move> getValidMovement(const Piece &piece, Tile * currentTile, int relativeStrengthMod);
         std::vector<Move> getValidRangedAttacks(const Piece &piece, Tile * currentTile, int relativeRangedStrenghtMod, int relativeRangeMax);
         std::vector<Move> getValidMoves(const Piece &piece, MoveType type);
-        bool movePiece(Piece * piece, Tile * target);
-        bool shootPiece(Piece * piece, Tile * targe);
-        bool addPiece(Piece * piece, int tileIndex);
+        int movePiece(Piece * piece, Tile * target);
+        int shootPiece(Piece * piece, Tile * targe);
+        int addPiece(Piece * piece, int tileIndex);
         bool pieceExists(Piece * piece);
 };
 

@@ -360,7 +360,6 @@ void setupGame(GameInstance &game, WINDOW * terminalWindow) {
         Piece * piece = game.playerPieces[i].get();
         wprintw(terminalWindow, "Placing piece %d of %lu:\n", i+1, game.playerPieces.size());
         wprintw(terminalWindow, "    Piece type: %s\n", getPieceType(piece).c_str()); 
-        wprintw(terminalWindow, "Select tile to place piece: ");
         wrefresh(terminalWindow);
 
         int coordInput = getUserInput();
@@ -368,34 +367,31 @@ void setupGame(GameInstance &game, WINDOW * terminalWindow) {
         cursorY = game.board[coordInput].y;
 
         if (coordInput > game.board.size() || coordInput < 0) {
-            wprintw(terminalWindow, "\nError, selected (x, y) coordinate outside of board range.\n");
+            wprintw(terminalWindow, "Error, selected (x, y) coordinate outside of board range.\n");
+            wprintw(terminalWindow, "Failed to add piece to board, try again...\n");
             i--;
             continue;
         }
 
         if (coordInput < game.board.size() - game.boardWidth - 1) {
-            wprintw(terminalWindow, "\nError, selected (x, y) coordinate outside of player deployment zone.\n");
+            wprintw(terminalWindow, "Error, selected (x, y) coordinate outside of player deployment zone.\n");
+            wprintw(terminalWindow, "Failed to add piece to board, try again...\n");
             i--;
             continue;
         }
-
-        if (game.addPiece(piece, coordInput)) {
-            wprintw(terminalWindow, "\nPiece successfully added at (%d, %d)\n", cursorX+1, cursorY+1);
+        
+        if (int code = game.addPiece(piece, coordInput) == 1) {
+            wprintw(terminalWindow, "Piece successfully placed at (%d, %d)\n", cursorX+1, cursorY+1);
         } else {
             i--;
-            wprintw(terminalWindow, "\nPiece placement unsuccessful, try again\n");
-            continue;
+            wprintw(terminalWindow, "Error code: %d\n", code);
+            wprintw(terminalWindow, "Failed to add piece to board, try again...\n");
         }
         wrefresh(terminalWindow);
     }
 
     wprintw(terminalWindow, "Placing enemy pieces...\n");
-    int setup = game.setupEnemy();
-    if (setup == 1) {
-        wprintw(terminalWindow, "Enemy pieces successfully added.\n");
-    } else {
-        wprintw(terminalWindow, "Error, enemy piece failed to be added to board\n");
-    }
+    if (game.setupEnemy() == 1) wprintw(terminalWindow, "Enemy pieces successfully added.\n");
     wrefresh(terminalWindow);
 
     printBoard(game.board, game.boardWidth, game.boardHeight, boardWindow, 300, 300);
@@ -421,8 +417,8 @@ void runGame(GameInstance &game, bool startingPlayer, WINDOW * terminalWindow) {
                         // 4: quit
 
     auto getUserInput = [&game, terminalWindow, boardWindow, &cursorX, &cursorY](bool valid, Piece * piece) {
-        int ch;      
-        do { 
+        int ch = 0;      
+        while (ch != '\n' && ch != 27) { 
             (valid) ? printValidTilesBoard(game.board, game.getValidMoves(*piece, MoveType::Any), game.boardWidth, game.boardHeight, boardWindow, cursorX, cursorY) : printBoard(game.board, game.boardWidth, game.boardHeight, boardWindow, cursorX,  cursorY);
             ch = wgetch(terminalWindow);
             switch (ch) {
@@ -439,7 +435,7 @@ void runGame(GameInstance &game, bool startingPlayer, WINDOW * terminalWindow) {
                     if (cursorX < game.boardWidth - 1) cursorX++;
                     break;
             }
-        } while (ch != '\n' && ch != 27);
+        } 
 
         if (ch == 27) return -1;
         return cursorY * game.boardWidth + cursorX;
@@ -468,7 +464,7 @@ void runGame(GameInstance &game, bool startingPlayer, WINDOW * terminalWindow) {
 
             if (game.board[coordInput].occupyingPiece && game.board[coordInput].occupyingPiece->ownedByPlayer) {
                 Piece * piece = game.board[coordInput].occupyingPiece;
-                wprintw(terminalWindow, "Select a tile to move to...\n");
+                wprintw(terminalWindow, "Select a piece...\n");
                 wrefresh(terminalWindow);
                 coordInput = getUserInput(true, piece);
                 if (piece->hasRangedAttack) {

@@ -135,32 +135,6 @@ bool GameInstance::pieceExists(Piece * piece) {
     return false;
 }
 
-bool GameInstance::addPiece(Piece * piece, int tileIndex) {
-    if (tileIndex >= board.size()) {
-        printw("Fail, coordinates out of bounds\n");
-        return false; // Fail condition 1, out of bounds
-    }
-    
-    if (!pieceExists(piece)) {
-        printw("Fail, piece not in game instance\n");
-        return false; // Fail condition 2, piece not in game
-    }
-
-    Tile * tile = &board[tileIndex];
-    if (tile->occupyingPiece != nullptr) {
-        printw("Fail, tile already occupied\n");
-        return false;
-    } // Fail condition 3, tile occupied
-    if (tile->terrain == TerrainType::Water) {
-        printw("Fail, can't place pieces on water tiles\n");
-        return false;
-    } // Fail condition 4, tile invalid
-
-    tile->occupyingPiece = piece;
-    piece->onBoard = true;
-    return true;
-}
-
 Tile * GameInstance::getPieceTile(const Piece &piece) {
     for (Tile &t : board) if (t.occupyingPiece == &piece) return &t;
     return nullptr;
@@ -187,7 +161,6 @@ std::vector<Move> GameInstance::getValidMovement(const Piece &piece, Tile * curr
             Tile * checkTile = getTile(currentTile->x + (vectors[i][0]*j), currentTile->y + (vectors[i][1]*j));
             if (!checkTile) break; // Fail case if tile doesn't exist
             
-            // Terrain Logic Here
             int relativeToughnessMod = 0;
 
             switch (checkTile->terrain) {
@@ -354,29 +327,36 @@ std::vector<Move> GameInstance::getValidMoves(const Piece &piece, MoveType type)
         for (Move move : getValidMovement(piece, currentTile, relativeStrengthMod)) validTiles.push_back(move);
     } else if (type == MoveType::Shoot) {
         for (Move move : getValidRangedAttacks(piece, currentTile, relativeRangedStrengthMod, relativeRangeMax)) validTiles.push_back(move);
+    } else if (type == MoveType::Capture && canCapture) {
+        validTiles.push_back(Move{MoveType::Capture, currentTile, currentTile});
     }
 
     return validTiles;
 
 }
 
-// Function to move a piece from one tile to another, provided the checks of getValidMoves and pieceExists are passed. Also allows for the "capture" of pieces 
-bool GameInstance::movePiece(Piece * piece, Tile * target) {
-    if (!target) {
-        printw("Fail, target tile out of bounds\n");
-        return false; // Fail condition 1, out of bounds
-    }
+int GameInstance::addPiece(Piece * piece, int tileIndex) {
+    if (tileIndex >= board.size()) return -1; // Fail condition 1, out of bounds
     
-    if (!pieceExists(piece)) {
-        printw("Fail, piece not in game instance\n");
-        return false; // Fail condition 2, piece not in game
-    }
+    if (!pieceExists(piece)) return -2; // Fail condition 2, piece not in game
+
+    Tile * tile = &board[tileIndex];
+    if (tile->occupyingPiece != nullptr) return -3; // Fail condition 3, tile occupied
+
+    if (tile->terrain == TerrainType::Water) return -4; // Fail condition 4, tile invalid
+
+    tile->occupyingPiece = piece;
+    piece->onBoard = true;
+    return 1;
+}
+
+int GameInstance::movePiece(Piece * piece, Tile * target) {
+    if (!target) return -1; // Fail condition 1, out of bounds
+    
+    if (!pieceExists(piece)) return -2; // Fail condition 2, piece not in game
 
     Tile * currentTile = getPieceTile(*piece);
-    if (!currentTile->occupyingPiece->onBoard) {
-        printw("Fail, piece not on board\n");
-        return false; // Fail condition 3, piece not on board
-    }
+    if (!currentTile->occupyingPiece->onBoard) return -3; // Fail condition 3, piece not on board
 
     std::vector<Move> validTiles = getValidMoves(*piece, MoveType::Move);
 
@@ -385,23 +365,22 @@ bool GameInstance::movePiece(Piece * piece, Tile * target) {
             if (target->occupyingPiece) target->occupyingPiece->onBoard = false;
             currentTile->occupyingPiece = nullptr;
             target->occupyingPiece = piece;
-            printw("Piece moved from (%d, %d) to (%d ,%d)\n", currentTile->x+1, currentTile->y+1, target->x+1, target->y+1);
-            return true;
+            return 1;
         }
     }
 
-    printw("Fail, invalid move.\n");
-    printw("Target was: (%d, %d)\n", target->x+1, target->y+1); 
-    return false; // Fail condition 4, rare exception
+    return -4; // Fail condition 4, rare exception
 }
 
-bool GameInstance::shootPiece(Piece * piece, Tile * target) {
-    if (!target) return false;
+int GameInstance::shootPiece(Piece * piece, Tile * target) {
+    if (!target) return -1; // Fail condition 1, out of bounds
 
-    if (!pieceExists(piece)) return false;
+    if (!pieceExists(piece)) return -2; // Fail condition 2, piece not in game
 
     Tile * currentTile = getPieceTile(*piece);
-    if (!currentTile->occupyingPiece->onBoard) return false;
+    if (!currentTile->occupyingPiece->onBoard) return -3; // Fail condition 3, piece not on board
+
+    if (!target->occupyingPiece) return -4; // Fail condition 4, target not on board
 
     std::vector<Move> validTiles = getValidMoves(*piece, MoveType::Shoot);
     for (Move move : validTiles) {
@@ -411,9 +390,10 @@ bool GameInstance::shootPiece(Piece * piece, Tile * target) {
             return true;
         }
     }
-    return false;
+    return -5; // Fail condition 5, other error
 }
 
+// Currently doesn't do anything
 int GameInstance::isMissionComplete() {
     switch (mission) {
         case MissionType::HoldThePoint: {
@@ -441,25 +421,19 @@ int GameInstance::isMissionComplete() {
 }
 
 int GameInstance::takePlayerTurn(Move move) {
-    bool moveComplete = false;
     switch (move.type) {
         case MoveType::Move: 
-            printw("Attempting move\n");
-            moveComplete = movePiece(move.from->occupyingPiece, move.to);
-            break;
+            movePiece(move.from->occupyingPiece, move.to);
+            return 1;
         case MoveType::Shoot:
-            printw("Attempting to shoot\n");
-            moveComplete = !(move.to->occupyingPiece);
-            break;
+            shootPiece(move.from->occupyingPiece, move.to);
+            return 1;
         case MoveType::Capture:
-            printw("Attempting to capture objective\n");
-            break;
+            playerHoldsObjective = true;
+            return 2;
         default:
-            printw("Error, move type not recognized\n");
+            return 0;
     }
-
-    if (!moveComplete) return 0;
-    return isMissionComplete();
 }
 
 int GameInstance::setupEnemy() {
@@ -487,25 +461,17 @@ int GameInstance::takeEnemyTurn() {
 
     Move move = enemyAlgoRandom(allEnemyMoves, board);
 
-    bool moveComplete = false;
     switch (move.type) {
         case MoveType::Move: 
-            printw("Enemy attempting move from (%d, %d) to (%d, %d)\n", move.from->x+1, move.from->y+1, move.to->x+1, move.to->y+1);
-            moveComplete = movePiece(move.from->occupyingPiece, move.to);
-            break;
+            movePiece(move.from->occupyingPiece, move.to);
+            return 1;
         case MoveType::Shoot:
-            printw("Enemy attempting to shoot\n");
-            move.to->occupyingPiece->onBoard = false;
-            move.to->occupyingPiece = nullptr;
-            moveComplete = !(move.to->occupyingPiece);
-            break;
+            shootPiece(move.from->occupyingPiece, move.to);
+            return 1;
         case MoveType::Capture:
-            printw("Enemy attempting to capture objective\n");
-            break;
+            enemyHoldsObjective = true;
+            return 3;
         default:
-            printw("Error, enemy move type not recognized\n");
+            return 0;
     }
-
-    if (!moveComplete) return 0;
-    return isMissionComplete();
 }
