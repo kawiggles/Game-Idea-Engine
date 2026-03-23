@@ -140,17 +140,6 @@ Tile * GameInstance::getPieceTile(const Piece &piece) {
     return nullptr;
 }
 
-int vectors[8][2] = {
-    { 1, 0}, // Right
-    {-1, 0}, // Left
-    { 0, 1}, // Up
-    { 0,-1}, // Down
-    { 1, 1}, // Right and Up
-    {-1, 1}, // Left and Up
-    { 1,-1}, // Right and Down
-    {-1,-1}  // Left and Down
-};
-
 int GameInstance::getToughnessMod(Tile * tile) {
     int toughnessMod = 0;
 
@@ -186,6 +175,17 @@ int GameInstance::getToughnessMod(Tile * tile) {
     return toughnessMod;
 }
 
+static constexpr Direction vectors[8] = {
+    { 1, 0}, // Right
+    {-1, 0}, // Left
+    { 0, 1}, // Up
+    { 0,-1}, // Down
+    { 1, 1}, // Right and Up
+    {-1, 1}, // Left and Up
+    { 1,-1}, // Right and Down
+    {-1,-1}  // Left and Down
+};
+
 int GameInstance::getMovementMod(Tile * tile, const Piece &piece, int i) {
     int movementMod = 0;
     bool stopMove = false;
@@ -209,7 +209,7 @@ int GameInstance::getMovementMod(Tile * tile, const Piece &piece, int i) {
             }
             break;
         case TerrainType::Road: {
-            Tile * nextTile = getTile(tile->x + vectors[i][0], tile->y + vectors[i][1]);
+            Tile * nextTile = getTile(tile->x + vectors[i].dx, tile->y + vectors[i].dy);
             if (nextTile != nullptr &&
                 nextTile->terrain != TerrainType::Water &&
                 nextTile->terrain == TerrainType::Road) movementMod++; // Beautiful
@@ -251,7 +251,7 @@ std::vector<Move> GameInstance::getValidMovement(const Piece &piece, Tile * curr
         int maxMoveEval = (i < 4) ? piece.maxCardinal : piece.maxDiagonal;
         // j iterates through tiles on a vector. The ternary operator in this loop determines if the iteration limit is cardinalEval or diagonalEval. 
         for (int j = 1; j <= maxMoveEval; j++) { 
-            Tile * checkTile = getTile(currentTile->x + (vectors[i][0]*j), currentTile->y + (vectors[i][1]*j));
+            Tile * checkTile = getTile(currentTile->x + (vectors[i].dy*j), currentTile->y + (vectors[i].dy*j));
             if (!checkTile) break; 
             
             maxMoveEval += getMovementMod(checkTile, piece, i);
@@ -385,12 +385,12 @@ int GameInstance::addPiece(Piece * piece, int tileIndex) {
 }
 
 int GameInstance::movePiece(Piece * piece, Tile * target) {
-    if (!target) return -1; // Fail condition 1, out of bounds
+    if (!target) return MoveResult::TargetOutOfBounds;
     
-    if (!pieceExists(piece)) return -2; // Fail condition 2, piece not in game
+    if (!pieceExists(piece)) return MoveResult::PieceNotInGame;
 
     Tile * currentTile = getPieceTile(*piece);
-    if (!currentTile->occupyingPiece->onBoard) return -3; // Fail condition 3, piece not on board
+    if (!currentTile->occupyingPiece->onBoard) return MoveResult::PieceNotOnBoard;
 
     std::vector<Move> validTiles = getValidMoves(*piece, MoveType::Move);
 
@@ -399,37 +399,37 @@ int GameInstance::movePiece(Piece * piece, Tile * target) {
             if (target->occupyingPiece) target->occupyingPiece->onBoard = false;
             currentTile->occupyingPiece = nullptr;
             target->occupyingPiece = piece;
-            return 1;
+            return MoveResult::Success;
         }
     }
 
-    return 0; // Fail condition 4, invalid move
+    return MoveResult::InvalidMove;
 }
 
 int GameInstance::shootPiece(Piece * piece, Tile * target) {
-    if (!target) return -1; // Fail condition 1, out of bounds
+    if (!target) return MoveResult::TargetOutOfBounds;
 
-    if (!pieceExists(piece)) return -2; // Fail condition 2, piece not in game
+    if (!pieceExists(piece)) return MoveResult::PieceNotInGame;
 
     Tile * currentTile = getPieceTile(*piece);
-    if (!currentTile->occupyingPiece->onBoard) return -3; // Fail condition 3, piece not on board
+    if (!currentTile->occupyingPiece->onBoard) return MoveResult::PieceNotOnBoard;
 
-    if (!target->occupyingPiece) return -4; // Fail condition 4, target not on board
+    if (!target->occupyingPiece) return MoveResult::TargetNotOnBoard;
 
     std::vector<Move> validTiles = getValidMoves(*piece, MoveType::Shoot);
     for (Move move : validTiles) {
         if (target == move.to) {
             move.to->occupyingPiece->onBoard = false;
             move.to->occupyingPiece = nullptr;
-            return true;
+            return MoveResult::Success;
         }
     }
-    return 0; // Fail condition 0, invalid move
+    return MoveResult::InvalidMove;
 }
 
 int GameInstance::captureObjective(Piece * piece) {
 
-    return 0;
+    return MoveResult::InvalidMove;
 }
 
 // Currently doesn't do anything
@@ -469,7 +469,7 @@ int GameInstance::takePlayerTurn(MoveType moveType, Piece * piece, int coord) {
         case MoveType::Capture:
             return captureObjective(piece);
         default:
-            return 0;
+            return MoveResult::InvalidMove;
     }
 }
 
@@ -494,21 +494,19 @@ int GameInstance::takeEnemyTurn() {
         }
     }
     
-    if (allEnemyMoves.empty()) return 2;
+    if (allEnemyMoves.empty()) return MoveResult::PlayerWin;
 
     Move move = enemyAlgoRandom(allEnemyMoves, board);
 
     switch (move.type) {
         case MoveType::Move: 
-            movePiece(move.from->occupyingPiece, move.to);
-            return 1;
+            return movePiece(move.from->occupyingPiece, move.to);
         case MoveType::Shoot:
-            shootPiece(move.from->occupyingPiece, move.to);
-            return 1;
+            return shootPiece(move.from->occupyingPiece, move.to);
         case MoveType::Capture:
             enemyHoldsObjective = true;
             return 3;
         default:
-            return 0;
+            return MoveResult::InvalidMove;
     }
 }

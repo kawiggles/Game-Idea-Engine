@@ -83,4 +83,15 @@ enum class LeaderType {
     Scout
 };
 
+namespace MoveResult {
+    constexpr int EnemyWin = 3;
+    constexpr int PlayerWin = 2;
+    constexpr int Success = 1;
+    constexpr int InvalidMove = 0;
+    constexpr int TargetOutOfBounds = -1;
+    constexpr int PieceNotInGame = -2;
+    constexpr int PieceNotOnBoard = -3;
+    constexpr int TargetNotOnBoard = -4;
+}
+
 #endif

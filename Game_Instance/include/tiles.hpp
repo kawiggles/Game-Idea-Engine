@@ -17,7 +17,6 @@ struct Tile {
     int y = 0;
     TerrainType terrain = TerrainType::Field;
     Piece * occupyingPiece = nullptr; // Pointer to the piece currently on this tile, if any
-    std::string symbol = "[ ]"; // Used for testing
 };
 
 

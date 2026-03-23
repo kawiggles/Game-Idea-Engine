@@ -18,6 +18,11 @@ struct Move {
     Tile * to;
 };
 
+// A struct defining a direction as a vector, see gameinstance.cpp for implementation
+struct Direction {
+    int dx, dy;
+};
+
 // An instance of a game. Basically contains everything needed to run the core mechanics of the game
 class GameInstance {
     public:
