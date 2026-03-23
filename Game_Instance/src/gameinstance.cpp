@@ -403,7 +403,7 @@ int GameInstance::movePiece(Piece * piece, Tile * target) {
         }
     }
 
-    return -4; // Fail condition 4, rare exception
+    return 0; // Fail condition 4, invalid move
 }
 
 int GameInstance::shootPiece(Piece * piece, Tile * target) {
@@ -424,7 +424,12 @@ int GameInstance::shootPiece(Piece * piece, Tile * target) {
             return true;
         }
     }
-    return -5; // Fail condition 5, other error
+    return 0; // Fail condition 0, invalid move
+}
+
+int GameInstance::captureObjective(Piece * piece) {
+
+    return 0;
 }
 
 // Currently doesn't do anything
@@ -436,7 +441,7 @@ int GameInstance::isMissionComplete() {
                 if (tile.terrain == TerrainType::Objective) objective = &tile;
             }
 
-            if (objective->occupyingPiece == nullptr) {
+            if (playerHoldsObjective) {
                 playerHoldsObjective = false;
                 enemyHoldsObjective = false;
             } else if (objective->occupyingPiece->ownedByPlayer) {
@@ -454,17 +459,15 @@ int GameInstance::isMissionComplete() {
     }
 }
 
-int GameInstance::takePlayerTurn(Move move) {
-    switch (move.type) {
+int GameInstance::takePlayerTurn(MoveType moveType, Piece * piece, int coord) {
+
+    switch (moveType) {
         case MoveType::Move: 
-            movePiece(move.from->occupyingPiece, move.to);
-            return 1;
+            return movePiece(piece, &board[coord]);
         case MoveType::Shoot:
-            shootPiece(move.from->occupyingPiece, move.to);
-            return 1;
+            return shootPiece(piece, &board[coord]);
         case MoveType::Capture:
-            playerHoldsObjective = true;
-            return 2;
+            return captureObjective(piece);
         default:
             return 0;
     }

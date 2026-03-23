@@ -25,30 +25,35 @@ class GameInstance {
         GameInstance(unsigned long seed, BiomeType biome, MissionType mission, int octave, bool hasRoad);
 
         // Public Members of GameInstance, information available to players before initialization 
-        bool playerWin; // Not this one, this will do stuff in run 
         BiomeType biome;
         MissionType mission; 
         bool hasRoad; 
         int octave; 
         int boardWidth; 
         int boardHeight; 
-
-        // Private Members of GameInstance, make private later
-        std::vector<Tile> board;
+        
+        // Public method to set up game
+        void makeGame(std::vector<std::unique_ptr<Piece>>&& runPieces, std::vector<std::unique_ptr<Piece>>&& enemyPieces, WINDOW * window);
         std::vector<std::unique_ptr<Piece>> playerPieces;
+        int setupEnemy();
+        int addPiece(Piece * piece, int tileIndex);
+
+        // Public members and methods to run game
+        std::vector<Tile> board;
+        int turnCount;
+        int status; // <0: redo move
+                    // 1: go to next turn
+                    // 2: player wins
+                    // 3: enemy wins
+                    // 4: quit
+        int takePlayerTurn(MoveType moveType, Piece * piece, int coord);
+        int takeEnemyTurn();
+        std::vector<Move> getValidMoves(const Piece &piece, MoveType type);
+
+    private:
         std::vector<std::unique_ptr<Piece>> enemyPieces;
         unsigned long seed;
-        int turnCount;
 
-        // When a GameInstance is selected, makeGame actually generates the board
-        void makeGame(std::vector<std::unique_ptr<Piece>>&& runPieces, std::vector<std::unique_ptr<Piece>>&& enemyPieces, WINDOW * window);
-
-        // The turn functions, which alternates between the player turn and enemy turn
-        int takePlayerTurn(Move move);
-        int setupEnemy();
-        int takeEnemyTurn();
-
-        // Function to check if a mission is complete
         int isMissionComplete();
         bool playerHoldsObjective;
         bool enemyHoldsObjective;
@@ -63,10 +68,9 @@ class GameInstance {
         int getMovementMod(Tile * tile, const Piece &piece, int i);
         std::vector<Move> getValidMovement(const Piece &piece, Tile * currentTile, int relativeStrengthMod);
         std::vector<Move> getValidRangedAttacks(const Piece &piece, Tile * currentTile, int relativeRangedStrenghtMod, int relativeRangeMax);
-        std::vector<Move> getValidMoves(const Piece &piece, MoveType type);
         int movePiece(Piece * piece, Tile * target);
-        int shootPiece(Piece * piece, Tile * targe);
-        int addPiece(Piece * piece, int tileIndex);
+        int shootPiece(Piece * piece, Tile * target);
+        int captureObjective(Piece * piece);
         bool pieceExists(Piece * piece);
 };
 

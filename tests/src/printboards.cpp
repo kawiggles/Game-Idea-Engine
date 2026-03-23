@@ -410,11 +410,6 @@ void runGame(GameInstance &game, bool startingPlayer, WINDOW * terminalWindow) {
     int winHeight = game.boardHeight + 1 + 2;
     WINDOW * boardWindow = createNewWindow(winHeight, winWidth, (LINES-winHeight)/4, (COLS-winWidth)/2);
     int cursorX = 0, cursorY = game.boardHeight-1;
-    int gameStatus = 0; // 0: redo move
-                        // 1: go onto next turn
-                        // 2: player wins
-                        // 3: enemy wins
-                        // 4: quit
 
     auto getUserInput = [&game, terminalWindow, boardWindow, &cursorX, &cursorY](bool valid, Piece * piece) {
         int ch = 0;      
@@ -441,7 +436,7 @@ void runGame(GameInstance &game, bool startingPlayer, WINDOW * terminalWindow) {
         return cursorY * game.boardWidth + cursorX;
     };
 
-    while (!(gameStatus == 4 || gameStatus == 3 || gameStatus == 2)) {
+    while (!(game.status == 4 || game.status == 3 || game.status == 2)) {
         wprintw(terminalWindow, "Turn %d\n", game.turnCount);
         wrefresh(terminalWindow);
 
@@ -450,15 +445,13 @@ void runGame(GameInstance &game, bool startingPlayer, WINDOW * terminalWindow) {
             wprintw(terminalWindow, "Starting player turn...\n");
             wprintw(terminalWindow, "Select a piece to move (esc to quit)...\n");
 
-            Move selectedMove;
-            bool moveSelected = false;
             int coordInput = getUserInput(false, nullptr);
             wrefresh(terminalWindow);
 
             if (coordInput == -1) {
                 wprintw(terminalWindow, "Quitting...");
                 wrefresh(terminalWindow);
-                gameStatus = 4;
+                game.status = 4;
                 break;
             }
 
@@ -472,29 +465,48 @@ void runGame(GameInstance &game, bool startingPlayer, WINDOW * terminalWindow) {
                     wrefresh(terminalWindow);
                     int ch = wgetch(terminalWindow);
                     if (ch == 's') {
-                        selectedMove = Move{MoveType::Shoot, game.getPieceTile(*piece), &game.board[coordInput]};
-                        moveSelected = true;
+                        game.status = game.takePlayerTurn(MoveType::Shoot, piece, coordInput);
                     } else if (ch == 'm') {
-                        selectedMove = Move{MoveType::Move, game.getPieceTile(*piece), &game.board[coordInput]};
-                        moveSelected = true;
+                        game.status = game.takePlayerTurn(MoveType::Move, piece, coordInput);
                     }
                 } else {
-                    selectedMove = Move{MoveType::Move, game.getPieceTile(*piece), &game.board[coordInput]};
-                    moveSelected = true;
+                    game.status = game.takePlayerTurn(MoveType::Move, piece, coordInput);
                 }
             }
-            gameStatus = (moveSelected) ? game.takePlayerTurn(selectedMove) : 0;
         } else {
+            wprintw(terminalWindow, "Turn %d\n", game.turnCount);
             wprintw(terminalWindow, "Enemy taking turn...\n");
             wrefresh(terminalWindow);
-            gameStatus = game.takeEnemyTurn();
+            game.status = game.takeEnemyTurn();
         }
 
-        if (gameStatus == 0) game.turnCount--;
+        if (game.status <= 0) {
+            wprintw(terminalWindow, "Error %d encountered: ", game.status);
+            switch (game.status) {
+                case 0:
+                    wprintw(terminalWindow, "invalid move\n");
+                    break;
+                case -1:
+                    wprintw(terminalWindow, "target tile out of bounds\n");
+                    break;
+                case -2:
+                    wprintw(terminalWindow, "selected piece not in game\n");
+                    break;
+                case -3:
+                    wprintw(terminalWindow, "selected piece not on board\n");
+                    break;
+                case -4:
+                    wprintw(terminalWindow, "target piece not on board\n");
+                    break;
+                default:
+                    wprintw(terminalWindow, "unknown error\n");
+            }
+            game.turnCount--;
+        }
         game.turnCount++;
     }   
     
-    if (gameStatus == 2) {
+    if (game.status == 2) {
         wprintw(terminalWindow, "Player Wins!");
     } else {
         wprintw(terminalWindow, "Enemy Wins.");
