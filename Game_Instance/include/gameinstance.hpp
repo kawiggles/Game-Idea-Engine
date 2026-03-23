@@ -59,6 +59,8 @@ class GameInstance {
         Tile * getPieceTile(const Piece &piece);
 
         // Methods to interact with pieces
+        int getToughnessMod(Tile * tile);
+        int getMovementMod(Tile * tile, const Piece &piece, int i);
         std::vector<Move> getValidMovement(const Piece &piece, Tile * currentTile, int relativeStrengthMod);
         std::vector<Move> getValidRangedAttacks(const Piece &piece, Tile * currentTile, int relativeRangedStrenghtMod, int relativeRangeMax);
         std::vector<Move> getValidMoves(const Piece &piece, MoveType type);

@@ -140,103 +140,132 @@ Tile * GameInstance::getPieceTile(const Piece &piece) {
     return nullptr;
 }
 
+int vectors[8][2] = {
+    { 1, 0}, // Right
+    {-1, 0}, // Left
+    { 0, 1}, // Up
+    { 0,-1}, // Down
+    { 1, 1}, // Right and Up
+    {-1, 1}, // Left and Up
+    { 1,-1}, // Right and Down
+    {-1,-1}  // Left and Down
+};
+
+int GameInstance::getToughnessMod(Tile * tile) {
+    int toughnessMod = 0;
+
+    switch (tile->terrain) {
+        case TerrainType::Field: break;
+        case TerrainType::Forest:
+            toughnessMod++;
+            break;
+        case TerrainType::Water: break;
+        case TerrainType::Mountain:
+            toughnessMod++;
+            break;
+        case TerrainType::Road: break;
+        case TerrainType::Desert:
+            toughnessMod--;
+            break;
+        case TerrainType::Jungle:
+            toughnessMod++;
+            break;
+        case TerrainType::Peak: 
+            toughnessMod++;
+            toughnessMod++;
+            break;
+        // Arctic rules are simple here because effects will be determined later on if these tiles are selected.
+        case TerrainType::IceField: break;
+        case TerrainType::SnowField: break;
+        case TerrainType::Tundra: break;
+        case TerrainType::Objective:
+            toughnessMod++;
+            break;
+    }
+    
+    return toughnessMod;
+}
+
+int GameInstance::getMovementMod(Tile * tile, const Piece &piece, int i) {
+    int movementMod = 0;
+    bool stopMove = false;
+
+    switch (tile->terrain) {
+        case TerrainType::Field: break;
+        case TerrainType::Forest:
+            if ((piece.category == PieceCategory::Cavalry && 
+                 piece.type != PieceType::LCavalry) || 
+                 piece.category == PieceCategory::Siege) movementMod--;
+            break;
+        case TerrainType::Water:
+            stopMove = true;
+            break;
+        case TerrainType::Mountain:
+            if (piece.category == PieceCategory::Cavalry || 
+                piece.category == PieceCategory::Siege) {
+                stopMove = true;
+            } else {
+                movementMod--;
+            }
+            break;
+        case TerrainType::Road: {
+            Tile * nextTile = getTile(tile->x + vectors[i][0], tile->y + vectors[i][1]);
+            if (nextTile != nullptr &&
+                nextTile->terrain != TerrainType::Water &&
+                nextTile->terrain == TerrainType::Road) movementMod++; // Beautiful
+            break; }
+        case TerrainType::Desert:
+            movementMod--;
+            break;
+        case TerrainType::Jungle:
+            if (piece.category == PieceCategory::Siege) {
+                stopMove = true;
+                break;
+            }
+            if (!(piece.type == PieceType::Light || piece.type == PieceType::LCavalry)) movementMod--;
+            if (piece.category == PieceCategory::Cavalry) movementMod--;
+            break;
+        case TerrainType::Peak:
+            stopMove = true;
+            break;
+        // Arctic rules are simple here because effects will be determined later on if these tiles are selected.
+        case TerrainType::IceField:
+            break;
+        case TerrainType::SnowField:
+            movementMod--;
+            break;
+        case TerrainType::Tundra:
+            break;
+        case TerrainType::Objective:
+            break;
+    }
+
+    if (stopMove) return -1000;
+    return movementMod;
+}
+
 std::vector<Move> GameInstance::getValidMovement(const Piece &piece, Tile * currentTile, int relativeStrengthMod) {
     std::vector<Move> validTiles;
-    int vectors[8][2] = {
-        { 1, 0}, // Right
-        {-1, 0}, // Left
-        { 0, 1}, // Up
-        { 0,-1}, // Down
-        { 1, 1}, // Right and Up
-        {-1, 1}, // Left and Up
-        { 1,-1}, // Right and Down
-        {-1,-1}  // Left and Down
-    };
 
     for (int i = 0; i < 8; i++) {
-        bool stopMove = false;
-        int cardinalEval = piece.maxCardinal, diagonalEval = piece.maxDiagonal;
-        // j iterates through tiles on that vector. The ternary operator in the middle of this loop determines if the number of tiles iterated through is limited by the cardinalEval or diagonalEval value, corresponding with the array of vectors. 
-        for (int j = 1; (i < 4) ? j <= cardinalEval : j <= diagonalEval; j++) { 
+        int maxMoveEval = (i < 4) ? piece.maxCardinal : piece.maxDiagonal;
+        // j iterates through tiles on a vector. The ternary operator in this loop determines if the iteration limit is cardinalEval or diagonalEval. 
+        for (int j = 1; j <= maxMoveEval; j++) { 
             Tile * checkTile = getTile(currentTile->x + (vectors[i][0]*j), currentTile->y + (vectors[i][1]*j));
-            if (!checkTile) break; // Fail case if tile doesn't exist
+            if (!checkTile) break; 
             
-            int relativeToughnessMod = 0;
+            maxMoveEval += getMovementMod(checkTile, piece, i);
+            if (j > maxMoveEval) break;
 
-            switch (checkTile->terrain) {
-                case TerrainType::Field: break;
-                case TerrainType::Forest:
-                    if ((piece.category == PieceCategory::Cavalry && 
-                         piece.type != PieceType::LCavalry) || 
-                         piece.category == PieceCategory::Siege) (i < 4) ? cardinalEval-- : diagonalEval--;
-                    relativeToughnessMod++;
-                    break;
-                case TerrainType::Water:
-                    stopMove = true;
-                    break;
-                case TerrainType::Mountain:
-                    if (piece.category == PieceCategory::Cavalry || 
-                        piece.category == PieceCategory::Siege) {
-                        stopMove = true;
-                    } else {
-                        (i < 4) ? cardinalEval-- : diagonalEval--;
-                    }
-                    relativeToughnessMod++;
-                    break;
-                case TerrainType::Road: {
-                    Tile * nextTile = getTile(checkTile->x + vectors[i][0], checkTile->y + vectors[i][1]);
-                    if (nextTile != nullptr &&
-                        nextTile->terrain != TerrainType::Water &&
-                        nextTile->terrain == TerrainType::Road) (i < 4) ? cardinalEval++ : diagonalEval++; // Beautiful
-                    break; }
-                case TerrainType::Desert:
-                    relativeToughnessMod--;
-                    (i < 4) ? cardinalEval-- : diagonalEval--;
-                    break;
-                case TerrainType::Jungle:
-                    if (piece.category == PieceCategory::Siege) {
-                        stopMove = true;
-                        break;
-                    }
-                    if (!(piece.type == PieceType::Light)) (i < 4) ? cardinalEval-- : diagonalEval--;
-                    if (piece.category == PieceCategory::Cavalry) (i < 4) ? cardinalEval-- : diagonalEval--;
-                    relativeToughnessMod++;
-                    break;
-                case TerrainType::Peak:
-                    stopMove = true;
-                    break;
-                // Arctic rules are simple here because effects will be determined later on if these tiles are selected.
-                case TerrainType::IceField:
-                    break;
-                case TerrainType::SnowField:
-                    (i < 4) ? cardinalEval-- : diagonalEval--;
-                    break;
-                case TerrainType::Tundra:
-                    break;
-                case TerrainType::Objective:
-                    relativeToughnessMod++;
-                    break;
-            }
-
-            if ((i < 4) ? j > cardinalEval : j > diagonalEval) break;
-            if (stopMove == true) break;
-
-            // Piece capture logic Here
+            // Piece capture logic here
             if (checkTile->occupyingPiece) { 
-                if (checkTile->occupyingPiece->ownedByPlayer == piece.ownedByPlayer) { 
-                    if (piece.canMoveThroughPieces) {
-                        continue;
-                    } else {
-                        break;
-                    }
+                Piece * checkPiece = checkTile->occupyingPiece;
+                if (checkPiece->ownedByPlayer == piece.ownedByPlayer) { 
+                    if (piece.canMoveThroughPieces) continue;
                 } else {
-                    int relativeToughness = checkTile->occupyingPiece->toughness + relativeToughnessMod;
-                    if (piece.strength + relativeStrengthMod >= relativeToughness) {
-                        validTiles.push_back(Move{MoveType::Move, currentTile, checkTile});
-                        break;
-                    }
-                    break;
+                    if (piece.strength + relativeStrengthMod >= checkPiece->toughness + getToughnessMod(checkTile)) validTiles.push_back(Move{MoveType::Move, currentTile, checkTile});
                 }
+                break;
             } else {
                 validTiles.push_back(Move{MoveType::Move, currentTile, checkTile});
             }
@@ -260,7 +289,7 @@ std::vector<Move> GameInstance::getValidRangedAttacks(const Piece &piece, Tile *
                 if (nx >= 0 && nx < boardWidth && ny >=0 && ny < boardHeight) {
                     Tile * searchTile = getTile(nx, ny);
                     if (searchTile->occupyingPiece && searchTile->occupyingPiece->ownedByPlayer != piece.ownedByPlayer) {
-                        if (evalRangedStrength >= searchTile->occupyingPiece->toughness) {
+                        if (evalRangedStrength >= searchTile->occupyingPiece->toughness + getToughnessMod(searchTile)) {
                             validTiles.push_back(Move{MoveType::Shoot, currentTile, searchTile});
                         }
                     }
@@ -274,16 +303,21 @@ std::vector<Move> GameInstance::getValidRangedAttacks(const Piece &piece, Tile *
 
 // This function creates an array of valid move structs for a passed piece object 
 std::vector<Move> GameInstance::getValidMoves(const Piece &piece, MoveType type) {
+    std::vector<Move> validTiles;
+    validTiles.reserve((piece.maxCardinal+3 * 4) + (piece.maxDiagonal+3 * 4) + (2 * piece.rangedAttack.maxRange+2 * piece.rangedAttack.maxRange+2 + 2 * piece.rangedAttack.maxRange+2 + 1)+1); 
+
     Tile * currentTile = getPieceTile(piece);    
     int relativeStrengthMod = 0;
     int relativeRangedStrengthMod = 0;
     int relativeRangeMax = 0;
     bool canCapture = false;
+
     switch (currentTile->terrain) {
-        case TerrainType::Field: break;
+        case TerrainType::Field: 
+            if (piece.category == PieceCategory::Cavalry) relativeStrengthMod++;
+            break;
         case TerrainType::Forest:
-            if (piece.category != PieceCategory::Infantry) relativeStrengthMod++;
-            relativeStrengthMod++;
+            if (piece.category == PieceCategory::Infantry) relativeStrengthMod++;
             relativeRangedStrengthMod--;
             break;
         case TerrainType::Water: break;
@@ -294,7 +328,9 @@ std::vector<Move> GameInstance::getValidMoves(const Piece &piece, MoveType type)
         case TerrainType::Road:
             if (piece.category == PieceCategory::Cavalry) relativeStrengthMod++;
             break; 
-        case TerrainType::Desert: break;
+        case TerrainType::Desert: 
+            relativeStrengthMod--;
+            break;
         case TerrainType::Jungle:
             if (!(piece.type == PieceType::Light ||
                 piece.type == PieceType::LCavalry)) relativeStrengthMod--;
@@ -317,8 +353,6 @@ std::vector<Move> GameInstance::getValidMoves(const Piece &piece, MoveType type)
     }
 
     // Rune Logic Happens Here
-    std::vector<Move> validTiles;
-    validTiles.reserve((piece.maxCardinal+3 * 4) + (piece.maxDiagonal+3 * 4) + (2 * piece.rangedAttack.maxRange+2 * piece.rangedAttack.maxRange+2 + 2 * piece.rangedAttack.maxRange+2 + 1)+1); // This is essentially and arbitrarily large number to reserve. 
 
     if (type == MoveType::Any) {
         for (Move move : getValidMovement(piece, currentTile, relativeStrengthMod)) validTiles.push_back(move);
