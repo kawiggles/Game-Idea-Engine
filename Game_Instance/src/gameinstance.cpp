@@ -251,7 +251,7 @@ std::vector<Move> GameInstance::getValidMovement(const Piece &piece, Tile * curr
         int maxMoveEval = (i < 4) ? piece.maxCardinal : piece.maxDiagonal;
         // j iterates through tiles on a vector. The ternary operator in this loop determines if the iteration limit is cardinalEval or diagonalEval. 
         for (int j = 1; j <= maxMoveEval; j++) { 
-            Tile * checkTile = getTile(currentTile->x + (vectors[i].dy*j), currentTile->y + (vectors[i].dy*j));
+            Tile * checkTile = getTile(currentTile->x + (vectors[i].dx*j), currentTile->y + (vectors[i].dy*j));
             if (!checkTile) break; 
             
             maxMoveEval += getMovementMod(checkTile, piece, i);
@@ -479,7 +479,7 @@ int GameInstance::setupEnemy() {
     std::uniform_int_distribution disX(0, boardWidth - 1);
 
     for (int i = 0; i < enemyPieces.size(); i++) {
-        if (addPiece(enemyPieces[i].get(), disX(gen))) continue;
+        if (addPiece(enemyPieces[i].get(), disX(gen)) == 1) continue;
         i--;
     }
     return 1;

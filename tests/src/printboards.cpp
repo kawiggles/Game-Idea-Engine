@@ -472,6 +472,10 @@ void runGame(GameInstance &game, bool startingPlayer, WINDOW * terminalWindow) {
                 } else {
                     game.status = game.takePlayerTurn(MoveType::Move, piece, coordInput);
                 }
+            } else {
+                wprintw(terminalWindow, "Error, no friendly piece on selected tile\n");
+                wrefresh(terminalWindow);
+                game.turnCount--;
             }
         } else {
             wprintw(terminalWindow, "Turn %d\n", game.turnCount);
