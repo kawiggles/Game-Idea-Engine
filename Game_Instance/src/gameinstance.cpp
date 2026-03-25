@@ -63,7 +63,7 @@ void GameInstance::makeGame(std::vector<std::unique_ptr<Piece>>&& runPieces, std
             float ny = (float)y / boardHeight;
             float noiseValue = noiseMap.octave2D_01((nx * 4.0f), (ny * 4.0f), octave);  
 
-            board.push_back(Tile{x, y, getRandomTerrain(noiseValue, biome), nullptr});
+            board.emplace(y * boardWidth + x, makeRandomTerrain(noiseValue, biome, x , y));
             // (x, y), terrain type, and null pointer representing no occupying piece
         }
     }
@@ -140,110 +140,6 @@ Tile * GameInstance::getPieceTile(const Piece &piece) {
     return nullptr;
 }
 
-int GameInstance::getToughnessMod(Tile * tile) {
-    int toughnessMod = 0;
-
-    switch (tile->terrain) {
-        case TerrainType::Field: break;
-        case TerrainType::Forest:
-            toughnessMod++;
-            break;
-        case TerrainType::Water: break;
-        case TerrainType::Mountain:
-            toughnessMod++;
-            break;
-        case TerrainType::Road: break;
-        case TerrainType::Desert:
-            toughnessMod--;
-            break;
-        case TerrainType::Jungle:
-            toughnessMod++;
-            break;
-        case TerrainType::Peak: 
-            toughnessMod++;
-            toughnessMod++;
-            break;
-        // Arctic rules are simple here because effects will be determined later on if these tiles are selected.
-        case TerrainType::IceField: break;
-        case TerrainType::SnowField: break;
-        case TerrainType::Tundra: break;
-        case TerrainType::Objective:
-            toughnessMod++;
-            break;
-    }
-    
-    return toughnessMod;
-}
-
-static constexpr Direction vectors[8] = {
-    { 1, 0}, // Right
-    {-1, 0}, // Left
-    { 0, 1}, // Up
-    { 0,-1}, // Down
-    { 1, 1}, // Right and Up
-    {-1, 1}, // Left and Up
-    { 1,-1}, // Right and Down
-    {-1,-1}  // Left and Down
-};
-
-int GameInstance::getMovementMod(Tile * tile, const Piece &piece, int i) {
-    int movementMod = 0;
-    bool stopMove = false;
-
-    switch (tile->terrain) {
-        case TerrainType::Field: break;
-        case TerrainType::Forest:
-            if ((piece.category == PieceCategory::Cavalry && 
-                 piece.type != PieceType::LCavalry) || 
-                 piece.category == PieceCategory::Siege) movementMod--;
-            break;
-        case TerrainType::Water:
-            stopMove = true;
-            break;
-        case TerrainType::Mountain:
-            if (piece.category == PieceCategory::Cavalry || 
-                piece.category == PieceCategory::Siege) {
-                stopMove = true;
-            } else {
-                movementMod--;
-            }
-            break;
-        case TerrainType::Road: {
-            Tile * nextTile = getTile(tile->x + vectors[i].dx, tile->y + vectors[i].dy);
-            if (nextTile != nullptr &&
-                nextTile->terrain != TerrainType::Water &&
-                nextTile->terrain == TerrainType::Road) movementMod++; // Beautiful
-            break; }
-        case TerrainType::Desert:
-            movementMod--;
-            break;
-        case TerrainType::Jungle:
-            if (piece.category == PieceCategory::Siege) {
-                stopMove = true;
-                break;
-            }
-            if (!(piece.type == PieceType::Light || piece.type == PieceType::LCavalry)) movementMod--;
-            if (piece.category == PieceCategory::Cavalry) movementMod--;
-            break;
-        case TerrainType::Peak:
-            stopMove = true;
-            break;
-        // Arctic rules are simple here because effects will be determined later on if these tiles are selected.
-        case TerrainType::IceField:
-            break;
-        case TerrainType::SnowField:
-            movementMod--;
-            break;
-        case TerrainType::Tundra:
-            break;
-        case TerrainType::Objective:
-            break;
-    }
-
-    if (stopMove) return -1000;
-    return movementMod;
-}
-
 std::vector<Move> GameInstance::getValidMovement(const Piece &piece, Tile * currentTile, int relativeStrengthMod) {
     std::vector<Move> validTiles;
 
@@ -254,7 +150,7 @@ std::vector<Move> GameInstance::getValidMovement(const Piece &piece, Tile * curr
             Tile * checkTile = getTile(currentTile->x + (vectors[i].dx*j), currentTile->y + (vectors[i].dy*j));
             if (!checkTile) break; 
             
-            maxMoveEval += getMovementMod(checkTile, piece, i);
+            maxMoveEval += (checkTile->terrain == TerrainType::Road) ? checkTile->getRoadMovementMod(piece, getTile(checkTile->x + vectors[i].dx, checkTile->y + vectors[i].dy)) : checkTile->getMovementMod(piece); // Disgusting
             if (j > maxMoveEval) break;
 
             // Piece capture logic here
@@ -263,7 +159,7 @@ std::vector<Move> GameInstance::getValidMovement(const Piece &piece, Tile * curr
                 if (checkPiece->ownedByPlayer == piece.ownedByPlayer) { 
                     if (piece.canMoveThroughPieces) continue;
                 } else {
-                    if (piece.strength + relativeStrengthMod >= checkPiece->toughness + getToughnessMod(checkTile)) validTiles.push_back(Move{MoveType::Move, currentTile, checkTile});
+                    if (piece.strength + relativeStrengthMod >= checkPiece->toughness + checkTile->getToughnessMod()) validTiles.push_back(Move{MoveType::Move, currentTile, checkTile});
                 }
                 break;
             } else {
@@ -289,7 +185,7 @@ std::vector<Move> GameInstance::getValidRangedAttacks(const Piece &piece, Tile *
                 if (nx >= 0 && nx < boardWidth && ny >=0 && ny < boardHeight) {
                     Tile * searchTile = getTile(nx, ny);
                     if (searchTile->occupyingPiece && searchTile->occupyingPiece->ownedByPlayer != piece.ownedByPlayer) {
-                        if (evalRangedStrength >= searchTile->occupyingPiece->toughness + getToughnessMod(searchTile)) {
+                        if (evalRangedStrength >= searchTile->occupyingPiece->toughness + searchTile->getToughnessMod()) {
                             validTiles.push_back(Move{MoveType::Shoot, currentTile, searchTile});
                         }
                     }
@@ -307,50 +203,10 @@ std::vector<Move> GameInstance::getValidMoves(const Piece &piece, MoveType type)
     validTiles.reserve((piece.maxCardinal+3 * 4) + (piece.maxDiagonal+3 * 4) + (2 * piece.rangedAttack.maxRange+2 * piece.rangedAttack.maxRange+2 + 2 * piece.rangedAttack.maxRange+2 + 1)+1); 
 
     Tile * currentTile = getPieceTile(piece);    
-    int relativeStrengthMod = 0;
-    int relativeRangedStrengthMod = 0;
-    int relativeRangeMax = 0;
+    int relativeStrengthMod = currentTile->getStrengthMod(piece);
+    int relativeRangedStrengthMod = currentTile->getRangedStrengthMod(piece);
+    int relativeRangeMax = currentTile->getRangeMaxMod();
     bool canCapture = false;
-
-    switch (currentTile->terrain) {
-        case TerrainType::Field: 
-            if (piece.category == PieceCategory::Cavalry) relativeStrengthMod++;
-            break;
-        case TerrainType::Forest:
-            if (piece.category == PieceCategory::Infantry) relativeStrengthMod++;
-            relativeRangedStrengthMod--;
-            break;
-        case TerrainType::Water: break;
-        case TerrainType::Mountain:
-            if (piece.category == PieceCategory::Siege) relativeRangedStrengthMod++;
-            relativeRangeMax++;
-            break;
-        case TerrainType::Road:
-            if (piece.category == PieceCategory::Cavalry) relativeStrengthMod++;
-            break; 
-        case TerrainType::Desert: 
-            relativeStrengthMod--;
-            break;
-        case TerrainType::Jungle:
-            if (!(piece.type == PieceType::Light ||
-                piece.type == PieceType::LCavalry)) relativeStrengthMod--;
-            relativeRangedStrengthMod--;
-            relativeRangeMax--;
-            break;
-        case TerrainType::Peak:
-            relativeRangeMax++;
-            relativeRangedStrengthMod++;
-            break;
-        case TerrainType::IceField:
-            break;
-        case TerrainType::SnowField:
-            break;
-        case TerrainType::Tundra:
-            break;
-        case TerrainType::Objective:
-            canCapture = true;
-            break;
-    }
 
     // Rune Logic Happens Here
 

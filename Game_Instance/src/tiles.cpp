@@ -1,12 +1,13 @@
 #include "tiles.hpp"
 #include "types.hpp"
+#include "pieces.hpp"
 
-#include <cstdlib>
 #include <ncurses.h>
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
 #include <queue>
+#include <memory>
 
 /*
  * Tiles are the main structure referenced by GameInstance methods.
@@ -14,48 +15,118 @@
  *     - The (x, y) coordinate of the tile
  *     - The terrain type of the tile
  *     - A pointer to the piece occupying the tile
+ * Tiles are also polymorphic, with a child class for each possible TerrainType. These polymorphic classes contain instances of virtual methods which return terrain modifier values (Roads are weird)
  * Because of the way boards are constructed, any tile at coordiate (x, y) can be referenced by using the board vector index x * boardWidth + y
- * getRandomTerrain determines the terrain value of a tile by refrencing an associated perlin noise map and GameInstance biome
+ * getRandomTerrain determines the terrain value of a tile by refrencing an associated perlin noise map and GameInstance biome, and generates a unique pointer to that tile
  * generateRoad uses an A* search algorithm to generate a vector of tiles which are converted to the road terrain type in makeGame
  */
-TerrainType getRandomTerrain(float noise, BiomeType biome) {
+
+int Water::getMovementMod(const Piece &piece) { return -1000; }
+int Forest::getMovementMod(const Piece &piece) {
+    if ((piece.category == PieceCategory::Cavalry && 
+         piece.type != PieceType::LCavalry) || 
+         piece.category == PieceCategory::Siege) return -1;
+    return 0;
+}
+int Mountain::getMovementMod(const Piece &piece) {
+    if (piece.category == PieceCategory::Cavalry || 
+        piece.category == PieceCategory::Siege) return -1000;
+    return -1;
+}
+int Road::getRoadMovementMod(const Piece &piece, Tile * nextTile) {
+    if (nextTile != nullptr &&
+        nextTile->terrain != TerrainType::Water &&
+        nextTile->terrain == TerrainType::Road) return 1;
+    return 0;
+}
+int Desert::getMovementMod(const Piece &piece) { return -1; }
+int Jungle::getMovementMod(const Piece &piece) {
+    if (piece.category == PieceCategory::Siege) return -100;
+    int mod = 0;
+    if (!(piece.type == PieceType::Light || piece.type == PieceType::LCavalry)) mod--;
+    if (piece.category == PieceCategory::Cavalry) mod--;
+    return mod;
+}
+int Peak::getMovementMod(const Piece &piece) { return -1000; }
+int SnowField::getMovementMod(const Piece &piece) { return -1; }
+
+int Forest::getToughnessMod() { return 1; }
+int Mountain::getToughnessMod() { return 1; }
+int Desert::getToughnessMod() { return -1; }
+int Jungle::getToughnessMod() { return 1; }
+int Peak::getToughnessMod() { return 2; }
+int Objective::getToughnessMod() { return 1; }
+
+int Field::getStrengthMod(const Piece &piece) {
+    if (piece.category == PieceCategory::Cavalry) return 1;
+    return 0;
+}
+int Forest::getStrengthMod(const Piece &piece) {
+    if (piece.category == PieceCategory::Infantry) return 1;
+    return 0;
+}
+int Road::getStrengthMod(const Piece &piece) {
+    if (piece.category == PieceCategory::Cavalry) return 1;
+    return 0;
+}
+int Desert::getStrengthMod(const Piece &piece) { return -1; }
+int Jungle::getStrengthMod(const Piece &piece) {
+    if (piece.type == PieceType::Light || piece.type == PieceType::LCavalry) return 0;
+    return -1;
+}
+
+int Mountain::getRangedStrengthMod(const Piece &piece) {
+    if (piece.category == PieceCategory::Siege) return 1;
+    return 0;
+}
+int Jungle::getRangedStrengthMod(const Piece &piece) { return -1; }
+int Peak::getRangedStrengthMod(const Piece &piece) { return -1; }
+
+int Forest::getRangeMaxMod() { return -1; }
+int Mountain::getRangeMaxMod() { return 1; }
+int Jungle::getRangeMaxMod() { return -1; }
+int Peak::getRangeMaxMod() { return 1; }
+
+
+
+std::unique_ptr<Tile> makeRandomTerrain(float noise, BiomeType biome, int x, int y) {
     switch (biome) {
         case BiomeType::Temperate:
-            if (noise < 0.3f) return TerrainType::Water;
-            if (noise < 0.45f) return TerrainType::Field;
-            if (noise < 0.7f) return TerrainType::Forest;
-            return TerrainType::Mountain;
+            if (noise < 0.3f) return std::unique_ptr<Tile>(std::make_unique<Water>(x, y));
+            if (noise < 0.45f) return std::unique_ptr<Tile>(std::make_unique<Field>(x, y));
+            if (noise < 0.7f) return std::unique_ptr<Tile>(std::make_unique<Forest>(x, y));
+            return std::unique_ptr<Tile>(std::make_unique<Mountain>(x, y));
         case BiomeType::Grassy:
-            if (noise < 0.3f) return TerrainType::Water;
-            if (noise < 0.55f) return TerrainType::Field;
-            if (noise < 0.7f) return TerrainType::Forest;
-            return TerrainType::Mountain;
+            if (noise < 0.3f) return std::unique_ptr<Tile>(std::make_unique<Water>(x, y));
+            if (noise < 0.55f) return std::unique_ptr<Tile>(std::make_unique<Field>(x, y));
+            if (noise < 0.7f) return std::unique_ptr<Tile>(std::make_unique<Forest>(x, y));
+            return std::unique_ptr<Tile>(std::make_unique<Mountain>(x, y));
         case BiomeType::Arid:
-            if (noise < 0.15f) return TerrainType::Water;
-            if (noise < 0.45f) return TerrainType::Field;
-            if (noise < 0.75f) return TerrainType::Desert;
-            if (noise < 0.9f) return TerrainType::Forest;
-            return TerrainType::Mountain;
+            if (noise < 0.1f) return std::unique_ptr<Tile>(std::make_unique<Water>(x, y));
+            if (noise < 0.45f) return std::unique_ptr<Tile>(std::make_unique<Field>(x, y));
+            if (noise < 0.75f) return std::unique_ptr<Tile>(std::make_unique<Desert>(x, y));
+            if (noise < 0.9f) return std::unique_ptr<Tile>(std::make_unique<Forest>(x, y));
+            return std::unique_ptr<Tile>(std::make_unique<Mountain>(x, y));
         case BiomeType::Tropical:
-            if (noise < 0.3f) return TerrainType::Water;
-            if (noise < 0.4f) return TerrainType::Field;
-            if (noise < 0.55f) return TerrainType::Forest;
-            if (noise < 0.8f) return TerrainType::Jungle;
-            return TerrainType::Mountain;
+            if (noise < 0.3f) return std::unique_ptr<Tile>(std::make_unique<Water>(x, y));
+            if (noise < 0.4f) return std::unique_ptr<Tile>(std::make_unique<Field>(x, y));
+            if (noise < 0.55f) return std::unique_ptr<Tile>(std::make_unique<Forest>(x, y));
+            if (noise < 0.8f) return std::unique_ptr<Tile>(std::make_unique<Jungle>(x, y));
+            return std::unique_ptr<Tile>(std::make_unique<Mountain>(x, y));
         case BiomeType::Alpine:
-            if (noise < 0.1f) return TerrainType::Water;
-            if (noise < 0.3f) return TerrainType::Field;
-            if (noise < 0.5f) return TerrainType::Forest;
-            if (noise < 0.75f) return TerrainType::Mountain;
-            return TerrainType::Peak;
+            if (noise < 0.15f) return std::unique_ptr<Tile>(std::make_unique<Water>(x, y));
+            if (noise < 0.3f) return std::unique_ptr<Tile>(std::make_unique<Field>(x, y));
+            if (noise < 0.5f) return std::unique_ptr<Tile>(std::make_unique<Forest>(x, y));
+            if (noise < 0.75f) return std::unique_ptr<Tile>(std::make_unique<Mountain>(x, y));
+            return std::unique_ptr<Tile>(std::make_unique<Peak>(x, y));
         case BiomeType::Arctic:
-            if (noise < 0.2f) return TerrainType::Water;
-            if (noise < 0.4f) return TerrainType::IceField;
-            if (noise < 0.6f) return TerrainType::SnowField;
-            if (noise < 0.8f) return TerrainType::Tundra;
-            return TerrainType::Mountain;
+            if (noise < 0.2f) return std::unique_ptr<Tile>(std::make_unique<Water>(x, y));
+            if (noise < 0.4f) return std::unique_ptr<Tile>(std::make_unique<IceField>(x, y));
+            if (noise < 0.6f) return std::unique_ptr<Tile>(std::make_unique<SnowField>(x, y));
+            if (noise < 0.8f) return std::unique_ptr<Tile>(std::make_unique<Tundra>(x, y));
+            return std::unique_ptr<Tile>(std::make_unique<Mountain>(x, y));
         default: 
-            return TerrainType::Field;
+            return std::unique_ptr<Tile>(std::make_unique<Field>(x, y));
     }
 }
 

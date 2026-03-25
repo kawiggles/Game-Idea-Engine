@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <vector>
+#include <unordered_map>
 #include <ncurses.h>
 
 #include "tiles.hpp"
@@ -16,11 +17,6 @@ struct Move {
     MoveType type;
     Tile * from;
     Tile * to;
-};
-
-// A struct defining a direction as a vector, see gameinstance.cpp for implementation
-struct Direction {
-    int dx, dy;
 };
 
 // An instance of a game. Basically contains everything needed to run the core mechanics of the game
@@ -44,7 +40,7 @@ class GameInstance {
         int addPiece(Piece * piece, int tileIndex);
 
         // Public members and methods to run game
-        std::vector<Tile> board;
+        std::unordered_map<int, std::unique_ptr<Tile>> board;
         int turnCount;
         int status; // <0: redo move
                     // 1: go to next turn

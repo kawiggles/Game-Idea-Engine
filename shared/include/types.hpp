@@ -94,4 +94,19 @@ namespace MoveResult {
     constexpr int TargetNotOnBoard = -4;
 }
 
+struct Direction {
+    int dx, dy;
+};
+
+static constexpr Direction vectors[8] = {
+    { 1, 0}, // Right
+    {-1, 0}, // Left
+    { 0, 1}, // Up
+    { 0,-1}, // Down
+    { 1, 1}, // Right and Up
+    {-1, 1}, // Left and Up
+    { 1,-1}, // Right and Down
+    {-1,-1}  // Left and Down
+};
+
 #endif
