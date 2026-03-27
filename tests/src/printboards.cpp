@@ -1,9 +1,12 @@
+#pragma once
+
 #include "tiles.hpp"
 #include "gameinstance.hpp"
 #include "types.hpp"
 #include "printboards.hpp"
 
 #include <unordered_set>
+#include <string>
 #include <ncurses.h>
 /*
  * This is a temporary program which uses ncurses to represent the game state
@@ -200,7 +203,7 @@ std::string getBiomeType(const BiomeType biome) {
 }
 
 // Functions for printing board state
-void printBoard(const std::vector<Tile> &board, int width, int height, WINDOW * window, int cursorX, int cursorY) {
+void printBoard(const std::unordered_map<int, std::unique_ptr<Tile>> &board, int width, int height, WINDOW * window, int cursorX, int cursorY) {
     wclear(window);
     box(window, 0, 0);
     int tileIndex = 0;
@@ -257,7 +260,7 @@ void printBoard(const std::vector<Tile> &board, int width, int height, WINDOW * 
     wrefresh(window);
 }
 
-void printValidTilesBoard(std::vector<Tile> &board, std::vector<Move> moves, int width, int height, WINDOW * window, int cursorX, int cursorY) {
+void printValidTilesBoard(std::unordered_map<int, std::unique_ptr<Tile>> &board, std::vector<Move> moves, int width, int height, WINDOW * window, int cursorX, int cursorY) {
     wclear(window);
     box(window, 0, 0);
     std::unordered_set<Tile *> moveSet(moves.size()); 

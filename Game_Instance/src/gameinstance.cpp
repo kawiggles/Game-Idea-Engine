@@ -71,26 +71,26 @@ void GameInstance::makeGame(std::vector<std::unique_ptr<Piece>>&& runPieces, std
 
     if (hasRoad) {
         wprintw(window, "Generating road.\n");
-        Tile * startRoad;
-        Tile * endRoad;
+        Tile  * startRoad;
+        Tile  * endRoad;
         std::uniform_int_distribution<int> roadDis(0, boardWidth-1);
 
         do {
             int roadStartX = roadDis(gen);
-            startRoad = &board[roadStartX];
+            startRoad = board[roadStartX].get();
         } while (startRoad->terrain != TerrainType::Field && startRoad->terrain != TerrainType::Forest);
         
         do {
             int roadStartX = roadDis(gen);
-            endRoad = &board[boardWidth * (boardHeight-1) + roadStartX];
+            endRoad = board[boardWidth * (boardHeight-1) + roadStartX].get();
         } while (endRoad->terrain != TerrainType::Field && endRoad->terrain != TerrainType::Forest);
 
-        std::vector<Tile *> road;
+        std::vector<int> road;
         if (startRoad != nullptr && endRoad != nullptr) road = generateRoad(startRoad, endRoad, board, boardWidth, boardHeight, window);
-        for (Tile * tile : road) {
-            if (tile != nullptr) {
-                tile->terrain = TerrainType::Road;
-            }
+        for (int tile : road) {
+            int nx = board[tile]->x;
+            int ny = board[tile]->y;
+            board.emplace(tile, std::make_unique<Road>(nx, ny));
         }
         wprintw(window, "Road generated\n");
     }
@@ -103,7 +103,7 @@ void GameInstance::makeGame(std::vector<std::unique_ptr<Piece>>&& runPieces, std
             std::uniform_int_distribution<int> yDist(margin, boardHeight-margin-1);
             int objX = xDist(gen);
             int objY = yDist(gen);
-            board[objY * boardWidth + objX].terrain = TerrainType::Objective;
+            board.emplace(objY * boardWidth + objX, std::make_unique<Objective>(objX, objY));
             break;
         }
         default:
@@ -119,7 +119,7 @@ Tile * GameInstance::getTile(int x, int y) {
     if (x < 0 || x >= boardWidth || y < 0 || y >= boardHeight) {
         return nullptr;
     }
-    return &board[(y * boardWidth) + x];
+    return board[y * boardWidth + x].get();
 }
 
 int GameInstance::getTileId(const Tile &tile) {
@@ -133,11 +133,6 @@ bool GameInstance::pieceExists(Piece * piece) {
         for (const std::unique_ptr<Piece> &p : enemyPieces) if (p.get() == piece) return true;
     }
     return false;
-}
-
-Tile * GameInstance::getPieceTile(const Piece &piece) {
-    for (Tile &t : board) if (t.occupyingPiece == &piece) return &t;
-    return nullptr;
 }
 
 std::vector<Move> GameInstance::getValidMovement(const Piece &piece, Tile * currentTile, int relativeStrengthMod) {
@@ -230,7 +225,7 @@ int GameInstance::addPiece(Piece * piece, int tileIndex) {
     
     if (!pieceExists(piece)) return -2; // Fail condition 2, piece not in game
 
-    Tile * tile = &board[tileIndex];
+    Tile * tile = board[tileIndex].get();
     if (tile->occupyingPiece != nullptr) return -3; // Fail condition 3, tile occupied
 
     if (tile->terrain == TerrainType::Water) return -4; // Fail condition 4, tile invalid
@@ -288,40 +283,13 @@ int GameInstance::captureObjective(Piece * piece) {
     return MoveResult::InvalidMove;
 }
 
-// Currently doesn't do anything
-int GameInstance::isMissionComplete() {
-    switch (mission) {
-        case MissionType::HoldThePoint: {
-            Tile * objective = nullptr;
-            for (Tile &tile : board) {
-                if (tile.terrain == TerrainType::Objective) objective = &tile;
-            }
-
-            if (playerHoldsObjective) {
-                playerHoldsObjective = false;
-                enemyHoldsObjective = false;
-            } else if (objective->occupyingPiece->ownedByPlayer) {
-                if (playerHoldsObjective) return 2;
-                playerHoldsObjective = true;
-                enemyHoldsObjective = false;
-            } else {
-                if (enemyHoldsObjective) return 3;
-                playerHoldsObjective = false;
-                enemyHoldsObjective = true;
-            }
-            return 1;
-        }
-        default: return 1;
-    }
-}
-
 int GameInstance::takePlayerTurn(MoveType moveType, Piece * piece, int coord) {
 
     switch (moveType) {
         case MoveType::Move: 
-            return movePiece(piece, &board[coord]);
+            return movePiece(piece, board[coord].get());
         case MoveType::Shoot:
-            return shootPiece(piece, &board[coord]);
+            return shootPiece(piece, board[coord].get());
         case MoveType::Capture:
             return captureObjective(piece);
         default:

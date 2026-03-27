@@ -1,3 +1,4 @@
+#pragma once
 #include "tiles.hpp"
 #include "types.hpp"
 #include "pieces.hpp"
@@ -8,6 +9,7 @@
 #include <unordered_set>
 #include <queue>
 #include <memory>
+#include <cmath>
 
 /*
  * Tiles are the main structure referenced by GameInstance methods.
@@ -130,7 +132,7 @@ std::unique_ptr<Tile> makeRandomTerrain(float noise, BiomeType biome, int x, int
     }
 }
 
-std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<Tile> &board, int width, int height, WINDOW * window) {
+std::vector<int> generateRoad(Tile * startTile, Tile * endTile, std::unordered_map<int, std::unique_ptr<Tile>> &board, int width, int height, WINDOW * window) {
     wprintw(window, "Starting A* search algorithm\n");
     // Utility lambda functions:
     // copy of getTile because the board is not generated yet
@@ -151,6 +153,7 @@ std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<T
             case TerrainType::Mountain: return 10;
             case TerrainType::Desert:   return 2;
             case TerrainType::Jungle:   return 5;
+            case TerrainType::Water:    return 15;
             case TerrainType::Peak:     return 20;
             default:                    return 999; // Includes roads, water, and arctic environments
         }
@@ -159,15 +162,11 @@ std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<T
     // Gets all cardinally neighboring tiles by index
     auto getNeighbors = [width, height] (Tile &tile) {
         std::vector<int> neighbors;
-        int vectors[4][2] = { { 1, 0},
-                              { 0, 1},
-                              {-1, 0},
-                              { 0,-1} };
         for (int i = 0; i < 4; i++) {
-            int nx = tile.x + vectors[i][0];
-            int ny = tile.y + vectors[i][1];
+            int nx = tile.x + vectors[i].dx;
+            int ny = tile.y + vectors[i].dy;
             if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                neighbors.push_back(tile.x + vectors[i][0] + width * (tile.y + vectors[i][1]));
+                neighbors.push_back(tile.x + vectors[i].dx + width * (tile.y + vectors[i].dy));
             }
         }
         return neighbors;
@@ -202,12 +201,12 @@ std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<T
                                  // Because the openSet comp lambda sorts by lowest f, it will always be the top of openSet
         if (current == getTileId(endTile)) { // if current = goal 
             wprintw(window, "Road path found, generating path vector.\n");
-            std::vector<Tile *> path;
-            path.push_back(&board[current]); // total_path := {current}
+            std::vector<int> path;
+            path.push_back(current); // total_path := {current}
 
             while (closedList.count(current) == 1) { // while current in cameFrom.Keys:
                 current = closedList[current]; // current := cameFrom[current]
-                path.push_back(&board[current]); // total_path.prepend(current)
+                path.push_back(current); // total_path.prepend(current)
             }
             return path; // return total_path  
         }        
@@ -215,13 +214,13 @@ std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<T
         openSet.pop(); // openSet.Remove(current)
         checkSet.erase(current); // remove current from the check set
         
-        std::vector<int> neighbors = getNeighbors(board[current]);
+        std::vector<int> neighbors = getNeighbors(*board[current]);
         for (int i = 0; i < neighbors.size(); i++) { // for each neighbor of current
-            int tentativeG = gScore[current] + getCost(board[neighbors[i]].terrain); // tentative_gScore := gScore[current] + d(current, neighbor) 
+            int tentativeG = gScore[current] + getCost(board[neighbors[i]]->terrain); // tentative_gScore := gScore[current] + d(current, neighbor) 
             if (gScore.find(neighbors[i]) == gScore.end() || tentativeG < gScore[neighbors[i]]) { // if tentative_gScore > gScore[neighbor]
                 closedList[neighbors[i]] = current; // cameFrom[neighbor] := current
                 gScore[neighbors[i]] = tentativeG; // gScore[neighbor] := tentative_gScore
-                fScore[neighbors[i]] = tentativeG + h(&board[neighbors[i]]); // fScore[neighbor] := tentative_gScore + h(neighbor)
+                fScore[neighbors[i]] = tentativeG + h(board[neighbors[i]].get()); // fScore[neighbor] := tentative_gScore + h(neighbor)
                 
                 if (checkSet.find(neighbors[i]) == checkSet.end()) { // if neighbor not in openSet
                     openSet.push(neighbors[i]); // openSet.add(neighbor)
@@ -233,7 +232,7 @@ std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<T
 
     }
     wprintw(window, "Algorithm failed.\n");
-    std::vector<Tile *> failure = { nullptr };
+    std::vector<int> failure = { };
     return failure;
 }
 

@@ -3,6 +3,7 @@
 #include "types.hpp"
 
 #include <vector>
+#include <unordered_map>
 #include <memory>
 #include <ncurses.h>
 
@@ -142,4 +143,4 @@ struct Objective : Tile {
 std::unique_ptr<Tile> makeRandomTerrain(float noise, BiomeType biome, int x, int y);
 
 // Function to generate a road on a board.
-std::vector<Tile *> generateRoad(Tile * startTile, Tile * endTile, std::vector<Tile> &board, int width, int height, WINDOW * window);
+std::vector<int> generateRoad(Tile * startTile, Tile * endTile, std::unordered_map<int, std::unique_ptr<Tile>> &board, int width, int height, WINDOW * window);

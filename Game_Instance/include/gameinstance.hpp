@@ -1,5 +1,4 @@
-#ifndef GAMEINSTANCE_HPP
-#define GAMEINSTANCE_HPP
+#pragma once
 
 #include <memory>
 #include <vector>
@@ -65,8 +64,6 @@ class GameInstance {
         Tile * getPieceTile(const Piece &piece);
 
         // Methods to interact with pieces
-        int getToughnessMod(Tile * tile);
-        int getMovementMod(Tile * tile, const Piece &piece, int i);
         std::vector<Move> getValidMovement(const Piece &piece, Tile * currentTile, int relativeStrengthMod);
         std::vector<Move> getValidRangedAttacks(const Piece &piece, Tile * currentTile, int relativeRangedStrenghtMod, int relativeRangeMax);
         int movePiece(Piece * piece, Tile * target);
@@ -75,4 +72,3 @@ class GameInstance {
         bool pieceExists(Piece * piece);
 };
 
-#endif
