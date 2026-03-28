@@ -1,4 +1,5 @@
 #pragma once
+
 #include "tiles.hpp"
 #include "types.hpp"
 #include "pieces.hpp"
@@ -94,41 +95,41 @@ int Peak::getRangeMaxMod() { return 1; }
 std::unique_ptr<Tile> makeRandomTerrain(float noise, BiomeType biome, int x, int y) {
     switch (biome) {
         case BiomeType::Temperate:
-            if (noise < 0.3f) return std::unique_ptr<Tile>(std::make_unique<Water>(x, y));
-            if (noise < 0.45f) return std::unique_ptr<Tile>(std::make_unique<Field>(x, y));
-            if (noise < 0.7f) return std::unique_ptr<Tile>(std::make_unique<Forest>(x, y));
-            return std::unique_ptr<Tile>(std::make_unique<Mountain>(x, y));
+            if (noise < 0.3f) return std::make_unique<Water>(x, y);
+            if (noise < 0.45f) return std::make_unique<Field>(x, y);
+            if (noise < 0.7f) return std::make_unique<Forest>(x, y);
+            return std::make_unique<Mountain>(x, y);
         case BiomeType::Grassy:
-            if (noise < 0.3f) return std::unique_ptr<Tile>(std::make_unique<Water>(x, y));
-            if (noise < 0.55f) return std::unique_ptr<Tile>(std::make_unique<Field>(x, y));
-            if (noise < 0.7f) return std::unique_ptr<Tile>(std::make_unique<Forest>(x, y));
-            return std::unique_ptr<Tile>(std::make_unique<Mountain>(x, y));
+            if (noise < 0.3f) return std::make_unique<Water>(x, y);
+            if (noise < 0.55f) return std::make_unique<Field>(x, y);
+            if (noise < 0.7f) return std::make_unique<Forest>(x, y);
+            return std::make_unique<Mountain>(x, y);
         case BiomeType::Arid:
-            if (noise < 0.1f) return std::unique_ptr<Tile>(std::make_unique<Water>(x, y));
-            if (noise < 0.45f) return std::unique_ptr<Tile>(std::make_unique<Field>(x, y));
-            if (noise < 0.75f) return std::unique_ptr<Tile>(std::make_unique<Desert>(x, y));
-            if (noise < 0.9f) return std::unique_ptr<Tile>(std::make_unique<Forest>(x, y));
-            return std::unique_ptr<Tile>(std::make_unique<Mountain>(x, y));
+            if (noise < 0.1f) return std::make_unique<Water>(x, y);
+            if (noise < 0.45f) return std::make_unique<Field>(x, y);
+            if (noise < 0.75f) return std::make_unique<Desert>(x, y);
+            if (noise < 0.9f) return std::make_unique<Forest>(x, y);
+            return std::make_unique<Mountain>(x, y);
         case BiomeType::Tropical:
-            if (noise < 0.3f) return std::unique_ptr<Tile>(std::make_unique<Water>(x, y));
-            if (noise < 0.4f) return std::unique_ptr<Tile>(std::make_unique<Field>(x, y));
-            if (noise < 0.55f) return std::unique_ptr<Tile>(std::make_unique<Forest>(x, y));
-            if (noise < 0.8f) return std::unique_ptr<Tile>(std::make_unique<Jungle>(x, y));
-            return std::unique_ptr<Tile>(std::make_unique<Mountain>(x, y));
+            if (noise < 0.3f) return std::make_unique<Water>(x, y);
+            if (noise < 0.4f) return std::make_unique<Field>(x, y);
+            if (noise < 0.55f) return std::make_unique<Forest>(x, y);
+            if (noise < 0.8f) return std::make_unique<Jungle>(x, y);
+            return std::make_unique<Mountain>(x, y);
         case BiomeType::Alpine:
-            if (noise < 0.15f) return std::unique_ptr<Tile>(std::make_unique<Water>(x, y));
-            if (noise < 0.3f) return std::unique_ptr<Tile>(std::make_unique<Field>(x, y));
-            if (noise < 0.5f) return std::unique_ptr<Tile>(std::make_unique<Forest>(x, y));
-            if (noise < 0.75f) return std::unique_ptr<Tile>(std::make_unique<Mountain>(x, y));
-            return std::unique_ptr<Tile>(std::make_unique<Peak>(x, y));
+            if (noise < 0.15f) return std::make_unique<Water>(x, y);
+            if (noise < 0.3f) return std::make_unique<Field>(x, y);
+            if (noise < 0.5f) return std::make_unique<Forest>(x, y);
+            if (noise < 0.75f) return std::make_unique<Mountain>(x, y);
+            return std::make_unique<Peak>(x, y);
         case BiomeType::Arctic:
-            if (noise < 0.2f) return std::unique_ptr<Tile>(std::make_unique<Water>(x, y));
-            if (noise < 0.4f) return std::unique_ptr<Tile>(std::make_unique<IceField>(x, y));
-            if (noise < 0.6f) return std::unique_ptr<Tile>(std::make_unique<SnowField>(x, y));
-            if (noise < 0.8f) return std::unique_ptr<Tile>(std::make_unique<Tundra>(x, y));
-            return std::unique_ptr<Tile>(std::make_unique<Mountain>(x, y));
+            if (noise < 0.2f) return std::make_unique<Water>(x, y);
+            if (noise < 0.4f) return std::make_unique<IceField>(x, y);
+            if (noise < 0.6f) return std::make_unique<SnowField>(x, y);
+            if (noise < 0.8f) return std::make_unique<Tundra>(x, y);
+            return std::make_unique<Mountain>(x, y);
         default: 
-            return std::unique_ptr<Tile>(std::make_unique<Field>(x, y));
+            return std::make_unique<Field>(x, y);
     }
 }
 

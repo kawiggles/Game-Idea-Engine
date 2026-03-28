@@ -1,5 +1,4 @@
-#ifndef PIECES_HPP
-#define PIECES_HPP
+#pragma once
 
 #include "types.hpp"
 
@@ -22,7 +21,6 @@ class Piece {
         PieceMaterial material;
         PieceType type;
         PieceCategory category;
-        bool onBoard = false;
         
         // Movement Stats
         bool ownedByPlayer = true;
@@ -49,6 +47,3 @@ class Piece {
         RuneSentence * commanderRuneSentence = nullptr; //The extra set of runes only available to commander pieces  
         bool druidRunes = false;
 };
-
-
-#endif

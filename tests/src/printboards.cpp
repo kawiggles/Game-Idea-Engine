@@ -224,9 +224,9 @@ void printBoard(const std::unordered_map<int, std::unique_ptr<Tile>> &board, int
         }
 
         for (int j = 0; j < width; j++) {
-            Symbol symbol = getSymbol(board[tileIndex]);
+            Symbol symbol = getSymbol(*board.at(tileIndex));
             if (tileIndex == cursorY * width + cursorX) wattron(window, A_REVERSE);
-            if (board[tileIndex].terrain == TerrainType::Water) {
+            if (board.at(tileIndex)->terrain == TerrainType::Water) {
                 wattron(window, COLOR_PAIR(symbol.terrainColor));
                 wprintw(window, "[~~]");
                 wattroff(window, COLOR_PAIR(symbol.terrainColor));
@@ -292,9 +292,9 @@ void printValidTilesBoard(std::unordered_map<int, std::unique_ptr<Tile>> &board,
 
         for (int j = 0; j < width; j++) {
             Symbol symbol;
-            (moveSet.count(&board[tileIndex])) ? symbol = getValidTileSymbol(board[tileIndex]) : symbol = getSymbol(board[tileIndex]); // Changes background depending on if the move is in the valid tiles set
+            (moveSet.count(board[tileIndex].get())) ? symbol = getValidTileSymbol(*board[tileIndex]) : symbol = getSymbol(*board[tileIndex]); // Changes background depending on if the move is in the valid tiles set
             if (tileIndex == cursorY * width + cursorX) wattron(window, A_REVERSE);
-            if (board[tileIndex].terrain == TerrainType::Water) {
+            if (board[tileIndex]->terrain == TerrainType::Water) {
                 wattron(window, COLOR_PAIR(symbol.terrainColor));
                 wprintw(window, "[~~]");
                 wattroff(window, COLOR_PAIR(symbol.terrainColor));
@@ -303,7 +303,7 @@ void printValidTilesBoard(std::unordered_map<int, std::unique_ptr<Tile>> &board,
                 continue;
             }
             wattron(window, COLOR_PAIR(symbol.terrainColor));
-            (rangedSet.count(&board[tileIndex])) ? wprintw(window, "[x") : wprintw(window, "[ ");
+            (rangedSet.count(board[tileIndex].get())) ? wprintw(window, "[x") : wprintw(window, "[ ");
             wattroff(window, COLOR_PAIR(symbol.terrainColor));
 
             if (tileIndex == cursorY * width + cursorX) {
@@ -366,8 +366,8 @@ void setupGame(GameInstance &game, WINDOW * terminalWindow) {
         wrefresh(terminalWindow);
 
         int coordInput = getUserInput();
-        cursorX = game.board[coordInput].x;
-        cursorY = game.board[coordInput].y;
+        cursorX = game.board[coordInput]->x;
+        cursorY = game.board[coordInput]->y;
 
         if (coordInput > game.board.size() || coordInput < 0) {
             wprintw(terminalWindow, "Error, selected (x, y) coordinate outside of board range.\n");
@@ -458,8 +458,8 @@ void runGame(GameInstance &game, bool startingPlayer, WINDOW * terminalWindow) {
                 break;
             }
 
-            if (game.board[coordInput].occupyingPiece && game.board[coordInput].occupyingPiece->ownedByPlayer) {
-                Piece * piece = game.board[coordInput].occupyingPiece;
+            if (game.board[coordInput]->occupyingPiece && game.board[coordInput]->occupyingPiece->ownedByPlayer) {
+                Piece * piece = game.board[coordInput]->occupyingPiece;
                 wprintw(terminalWindow, "Select a piece...\n");
                 wrefresh(terminalWindow);
                 coordInput = getUserInput(true, piece);

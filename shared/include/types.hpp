@@ -1,5 +1,4 @@
-#ifndef TYPES_HPP
-#define TYPES_HPP
+#pragma once
 
 /*
  * This header defines all the enums which are used across the code.
@@ -108,5 +107,3 @@ static constexpr Direction vectors[8] = {
     { 1,-1}, // Right and Down
     {-1,-1}  // Left and Down
 };
-
-#endif

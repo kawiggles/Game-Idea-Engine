@@ -1,5 +1,4 @@
-#ifndef ENEMY_HPP
-#define ENEMY_HPP
+#pragma once
 
 #include <vector>
 #include <unordered_map>
@@ -11,5 +10,3 @@ struct Tile;
 
 int enemySetupAlgoRandom(const std::unordered_map<int, std::unique_ptr<Tile>> &board);
 Move enemyAlgoRandom(std::vector<Move> possibleMoves, const std::unordered_map<int, std::unique_ptr<Tile>> &board);
-
-#endif

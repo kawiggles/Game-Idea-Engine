@@ -47,7 +47,7 @@ GameInstance::GameInstance(unsigned long seed, BiomeType biome, MissionType miss
 }
 
 // Remember to get rid of the window parameter when we move from ncurses
-void GameInstance::makeGame(std::vector<std::unique_ptr<Piece>>&& runPieces, std::vector<std::unique_ptr<Piece>>&& enemyPieces, WINDOW * window) {
+void GameInstance::makeGame(std::vector<std::unique_ptr<Piece>> &&runPieces, std::vector<std::unique_ptr<Piece>> &&enemyPieces, WINDOW * window) {
     wprintw(window, "Generating game instance...\n");
     wprintw(window, "Generating board of dimensions %d by %d.\n", boardWidth, boardHeight);
     board.reserve(boardWidth * boardHeight); 
@@ -64,7 +64,6 @@ void GameInstance::makeGame(std::vector<std::unique_ptr<Piece>>&& runPieces, std
             float noiseValue = noiseMap.octave2D_01((nx * 4.0f), (ny * 4.0f), octave);  
 
             board.emplace(y * boardWidth + x, makeRandomTerrain(noiseValue, biome, x , y));
-            // (x, y), terrain type, and null pointer representing no occupying piece
         }
     }
     wprintw(window, "Base board generated\n");
@@ -197,7 +196,7 @@ std::vector<Move> GameInstance::getValidMoves(const Piece &piece, MoveType type)
     std::vector<Move> validTiles;
     validTiles.reserve((piece.maxCardinal+3 * 4) + (piece.maxDiagonal+3 * 4) + (2 * piece.rangedAttack.maxRange+2 * piece.rangedAttack.maxRange+2 + 2 * piece.rangedAttack.maxRange+2 + 1)+1); 
 
-    Tile * currentTile = getPieceTile(piece);    
+    Tile * currentTile = piecePositions.at(const_cast<Piece*>(&piece));    
     int relativeStrengthMod = currentTile->getStrengthMod(piece);
     int relativeRangedStrengthMod = currentTile->getRangedStrengthMod(piece);
     int relativeRangeMax = currentTile->getRangeMaxMod();
@@ -231,7 +230,7 @@ int GameInstance::addPiece(Piece * piece, int tileIndex) {
     if (tile->terrain == TerrainType::Water) return -4; // Fail condition 4, tile invalid
 
     tile->occupyingPiece = piece;
-    piece->onBoard = true;
+    piecePositions[piece] = tile;
     return 1;
 }
 
@@ -240,16 +239,17 @@ int GameInstance::movePiece(Piece * piece, Tile * target) {
     
     if (!pieceExists(piece)) return MoveResult::PieceNotInGame;
 
-    Tile * currentTile = getPieceTile(*piece);
-    if (!currentTile->occupyingPiece->onBoard) return MoveResult::PieceNotOnBoard;
+    Tile * currentTile = piecePositions[piece];
+    if (!piecePositions[currentTile->occupyingPiece]) return MoveResult::PieceNotOnBoard;
 
     std::vector<Move> validTiles = getValidMoves(*piece, MoveType::Move);
 
     for (Move move : validTiles) {
         if (target == move.to) {
-            if (target->occupyingPiece) target->occupyingPiece->onBoard = false;
+            if (target->occupyingPiece) piecePositions[target->occupyingPiece] = nullptr;
             currentTile->occupyingPiece = nullptr;
             target->occupyingPiece = piece;
+            piecePositions[piece] = target;
             return MoveResult::Success;
         }
     }
@@ -262,15 +262,15 @@ int GameInstance::shootPiece(Piece * piece, Tile * target) {
 
     if (!pieceExists(piece)) return MoveResult::PieceNotInGame;
 
-    Tile * currentTile = getPieceTile(*piece);
-    if (!currentTile->occupyingPiece->onBoard) return MoveResult::PieceNotOnBoard;
+    Tile * currentTile = piecePositions[piece];
+    if (!piecePositions[currentTile->occupyingPiece]) return MoveResult::PieceNotOnBoard;
 
     if (!target->occupyingPiece) return MoveResult::TargetNotOnBoard;
 
     std::vector<Move> validTiles = getValidMoves(*piece, MoveType::Shoot);
     for (Move move : validTiles) {
         if (target == move.to) {
-            move.to->occupyingPiece->onBoard = false;
+            piecePositions[move.to->occupyingPiece] = nullptr;
             move.to->occupyingPiece = nullptr;
             return MoveResult::Success;
         }
@@ -312,7 +312,7 @@ int GameInstance::setupEnemy() {
 int GameInstance::takeEnemyTurn() {
     std::vector<Move> allEnemyMoves;
     for (const std::unique_ptr<Piece> &piece : enemyPieces) {
-        if (piece->onBoard) {
+        if (!piecePositions[piece.get()]) {
             std::vector<Move> pieceValidMoves = getValidMoves(*piece, MoveType::Any);
             allEnemyMoves.insert(allEnemyMoves.end(), pieceValidMoves.begin(), pieceValidMoves.end());
         }

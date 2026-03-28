@@ -1,5 +1,4 @@
-#ifndef RUNINSTANCE_HPP 
-#define RUNINSTANCE_HPP
+#pragma once
 
 #include <vector>
 #include "types.hpp"
@@ -26,5 +25,3 @@ class RunInstance {
         std::vector<GameInstance> generateGames();
         std::vector<Piece *> getInitialPieces();
 };
-
-#endif

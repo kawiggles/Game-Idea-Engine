@@ -29,7 +29,7 @@ struct Tile {
 struct Water : Tile {
     int x, y;
     Water(int x, int y) : x(x), y(y) {};
-    ~Water() override;
+    ~Water() override = default;
     TerrainType terrain = TerrainType::Water;
     int getMovementMod(const Piece &piece) override;
 };
@@ -37,7 +37,7 @@ struct Water : Tile {
 struct Field : Tile { 
     int x, y;
     Field(int x, int y) : x(x), y(y) {};
-    ~Field() override;
+    ~Field() override = default;
     TerrainType terrain = TerrainType::Field;
     int getStrengthMod(const Piece &piece) override;
 };
@@ -45,7 +45,7 @@ struct Field : Tile {
 struct Forest : Tile {
     int x, y;
     Forest(int x, int y) : x(x), y(y) {};
-    ~Forest() override;
+    ~Forest() override = default;
     TerrainType terrain = TerrainType::Forest;
     int getMovementMod(const Piece &piece) override;
     int getToughnessMod() override;
@@ -56,7 +56,7 @@ struct Forest : Tile {
 struct Mountain : Tile {
     int x, y;
     Mountain(int x, int y) : x(x), y(y) {};
-    ~Mountain() override;
+    ~Mountain() override = default;
     TerrainType terrain = TerrainType::Mountain;
     int getMovementMod(const Piece &piece) override;
     int getToughnessMod() override;
@@ -67,7 +67,7 @@ struct Mountain : Tile {
 struct Road : Tile {
     int x, y;
     Road(int x, int y) : x(x), y(y) {};
-    ~Road() override;
+    ~Road() override = default;
     TerrainType terrain = TerrainType::Road;
     int getRoadMovementMod(const Piece &piece, Tile * nextTile) override;
     int getStrengthMod(const Piece &piece) override;
@@ -76,7 +76,7 @@ struct Road : Tile {
 struct Desert : Tile {
     int x, y;
     Desert(int x, int y) : x(x), y(y) {};
-    ~Desert() override;
+    ~Desert() override = default;
     TerrainType terrain = TerrainType::Desert;
     int getMovementMod(const Piece &piece) override;
     int getToughnessMod() override;
@@ -86,7 +86,7 @@ struct Desert : Tile {
 struct Jungle : Tile {
     int x, y;
     Jungle(int x, int y) : x(x), y(y) {};
-    ~Jungle() override;
+    ~Jungle() override = default;
     TerrainType terrain = TerrainType::Jungle;
     int getMovementMod(const Piece &piece) override;
     int getToughnessMod() override;
@@ -98,7 +98,7 @@ struct Jungle : Tile {
 struct Peak : Tile {
     int x, y;
     Peak(int x, int y) : x(x), y(y) {};
-    ~Peak() override;
+    ~Peak() override = default;
     TerrainType terrain = TerrainType::Peak;
     int getMovementMod(const Piece &piece) override;
     int getToughnessMod() override;
@@ -109,14 +109,14 @@ struct Peak : Tile {
 struct IceField : Tile {
     int x, y;
     IceField(int x, int y) : x(x), y(y) {};
-    ~IceField() override;
+    ~IceField() override = default;
     TerrainType terrain = TerrainType::IceField;
 };
 
 struct SnowField : Tile {
     int x, y;
     SnowField(int x, int y) : x(x), y(y) {};
-    ~SnowField() override;
+    ~SnowField() override = default;
     TerrainType terrain = TerrainType::SnowField;
     int getMovementMod(const Piece &piece) override;
 };
@@ -124,14 +124,14 @@ struct SnowField : Tile {
 struct Tundra : Tile {
     int x, y;
     Tundra(int x, int y) : x(x), y(y) {};
-    ~Tundra() override;
+    ~Tundra() override = default;
     TerrainType terrain = TerrainType::Tundra;
 };
 
 struct Objective : Tile {
     int x, y;
     Objective(int x, int y) : x(x), y(y) {};
-    ~Objective() override;
+    ~Objective() override = default;
     TerrainType terrain = TerrainType::Objective;
     int getToughnessMod() override;
 };

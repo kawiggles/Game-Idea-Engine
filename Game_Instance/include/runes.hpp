@@ -1,5 +1,4 @@
-#ifndef RUNES_HPP
-#define RUNES_HPP
+#pragma once
 
 enum class RuneType {
     Quantifier,
@@ -55,5 +54,3 @@ struct RuneSentence {
     SubjectType subject = SubjectType::Self;
     PredicateType predicate = PredicateType::Plus1Movement;
 };
-
-#endif

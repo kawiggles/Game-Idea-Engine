@@ -1,5 +1,4 @@
-#ifndef MAPS_HPP
-#define MAPS_HPP
+#pragma once
 
 struct Map {
     int PLACEHOLDERVALUE_CHANGE;
@@ -10,5 +9,3 @@ Map makeMap(int seed);
 
 // Function to alter a passed map
 Map alterMap(Map oldMap);
-
-#endif
