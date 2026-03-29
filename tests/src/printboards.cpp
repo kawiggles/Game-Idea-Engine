@@ -4,9 +4,9 @@
 #include "gameinstance.hpp"
 #include "types.hpp"
 #include "printboards.hpp"
+#include "logs.hpp"
 
 #include <unordered_set>
-#include <string>
 #include <ncurses.h>
 /*
  * This is a temporary program which uses ncurses to represent the game state
@@ -170,38 +170,6 @@ Symbol getValidTileSymbol(const Tile &tile) {
     return symbol;
 }
 
-std::string getPieceType(const Piece * piece) {
-    switch(piece->type) {
-        case PieceType::Light:      return "Light Infantry";
-        case PieceType::Shield:     return "Shield Infantry";
-        case PieceType::Elite:      return "Elite Infantry";
-        case PieceType::Archer:     return "Archer";
-        case PieceType::LCavalry:   return "Light Cavalry";
-        case PieceType::MCavalry:   return "Medium Cavalry";
-        case PieceType::HCavalry:   return "Heavy Cavalry";
-        case PieceType::Catapult:   return "Trebuchet";
-        case PieceType::Ballista:   return "Ballista";
-        case PieceType::Chariot:    return "Chariot";
-        case PieceType::Commander:  return "Commander";
-        case PieceType::Wizard:     return "Wizard";
-        case PieceType::Assassin:   return "Assassin";
-        case PieceType::Druid:      return "Druid";
-        default:                    return "Unknown";
-    }
-}
-
-std::string getBiomeType(const BiomeType biome) {
-    switch (biome) {
-        case BiomeType::Grassy:     return "Grassland";
-        case BiomeType::Temperate:  return "Forest";
-        case BiomeType::Arid:       return "Desert";
-        case BiomeType::Tropical:   return "Jungle";
-        case BiomeType::Alpine:     return "Alpine";
-        case BiomeType::Arctic:     return "Arctic";
-        default:                    return "Unknown";
-    }
-}
-
 // Functions for printing board state
 void printBoard(const std::unordered_map<int, std::unique_ptr<Tile>> &board, int width, int height, WINDOW * window, int cursorX, int cursorY) {
     wclear(window);
@@ -292,7 +260,9 @@ void printValidTilesBoard(std::unordered_map<int, std::unique_ptr<Tile>> &board,
 
         for (int j = 0; j < width; j++) {
             Symbol symbol;
-            (moveSet.count(board[tileIndex].get())) ? symbol = getValidTileSymbol(*board[tileIndex]) : symbol = getSymbol(*board[tileIndex]); // Changes background depending on if the move is in the valid tiles set
+            (moveSet.count(board[tileIndex].get())) ?
+                symbol = getValidTileSymbol(*board[tileIndex]) :
+                symbol = getSymbol(*board[tileIndex]); // Changes background depending on if the move is in the valid tiles set
             if (tileIndex == cursorY * width + cursorX) wattron(window, A_REVERSE);
             if (board[tileIndex]->terrain == TerrainType::Water) {
                 wattron(window, COLOR_PAIR(symbol.terrainColor));
@@ -405,7 +375,7 @@ void setupGame(GameInstance &game, WINDOW * terminalWindow) {
 }
 
 void runGame(GameInstance &game, bool startingPlayer, WINDOW * terminalWindow) {
-    wprintw(terminalWindow, "Starting Game\n");
+    log("Starting Game\n");
     (startingPlayer) ? game.turnCount = 1 : game.turnCount = 2;
     wprintw(terminalWindow, "Starting Player: %s\n", (startingPlayer) ? "player" : "enemy");
     wrefresh(terminalWindow);

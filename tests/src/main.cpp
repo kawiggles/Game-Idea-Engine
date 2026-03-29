@@ -3,6 +3,7 @@
 #include "tiles.hpp"
 #include "gameinstance.hpp"
 #include "types.hpp"
+#include "logs.hpp"
 
 #include <assert.h>
 #include <random>
@@ -10,6 +11,8 @@
 #include <memory>
 
 int main() {
+    initLogger();
+
     initscr();
     noecho();
     cbreak();
@@ -54,14 +57,17 @@ int main() {
         std::random_device rd;
         testSeed = rd();
         wprintw(terminalWindow, "\nSeed: %u\n", testSeed);
+        log("Seed: %u", testSeed);
     } else {
         try {
             testSeed = stoul(seedInput);
             wprintw(terminalWindow, "\nSeed: %u\n", testSeed);
+            log("Seed: %u", testSeed);
         } catch (...) {
             std::random_device rd;
             testSeed = rd();
             wprintw(terminalWindow, "\nSeed: %u\n", testSeed);
+            log("Seed: %u", testSeed);
         }
     }
 
@@ -69,6 +75,7 @@ int main() {
     std::uniform_int_distribution<unsigned long> distribution;
     unsigned long gameSeed = distribution(gen);
     wprintw(terminalWindow, "Game seed: %lu\n", gameSeed);
+    log("Game seed: %lu\n", gameSeed);
 
     // Create arrays of test of pieces
     std::vector<std::unique_ptr<Piece>> testPlayerPieces;
@@ -77,7 +84,7 @@ int main() {
     testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Elite, true));
     testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Stone, PieceType::LCavalry, true));
     testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Stone, PieceType::LCavalry, true));
-    
+    log("Player pieces created...");
     
     std::vector<std::unique_ptr<Piece>> testEnemyPieces;
     testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, false));
@@ -85,28 +92,27 @@ int main() {
     testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Elite, false));
     testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, false));
     testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Shield, false));
+    log("Enemy pieces created...");
     
-    // Make a new game instance
+    log("Defining game instance attributes...");
     std::uniform_int_distribution<int> biomeDist(0, 4);
     BiomeType randomBiome = static_cast<BiomeType>(biomeDist(gen));
-    wprintw(terminalWindow, "Biome: %s\n", getBiomeType(randomBiome).c_str());
+    log("\tBiome: %s", getBiomeType(randomBiome).c_str());
 
     std::uniform_int_distribution<int> octaveDist(1, 3);
     int randomOctave = octaveDist(gen);
-    wprintw(terminalWindow, "Perlin noise octave: %d\n", randomOctave);
+    log("\tPerlin noise octave: %d", randomOctave);
 
     std::uniform_int_distribution<int> roadDist(0, 1);
     bool roadBool = roadDist(gen);
-    if (roadBool) wprintw(terminalWindow, "Board has road\n");
+    if (roadBool) log("\tBoard has road");
 
     wprintw(terminalWindow, "Press Enter to generate game instance...\n");
     wgetch(terminalWindow);
     wrefresh(terminalWindow);
 
     GameInstance testGame(gameSeed, randomBiome, MissionType::HoldThePoint, randomOctave, roadBool);
-    wprintw(terminalWindow, "Game Instance intitalized\n");
-    wrefresh(terminalWindow);
-    testGame.makeGame(std::move(testPlayerPieces), std::move(testEnemyPieces), terminalWindow);
+    testGame.makeGame(std::move(testPlayerPieces), std::move(testEnemyPieces));
     wprintw(terminalWindow, "Game Instance made, setting up game\n");
     wrefresh(terminalWindow);
     setupGame(testGame, terminalWindow);
@@ -118,5 +124,7 @@ int main() {
     destroyWindow(terminalWindow);
     destroyWindow(terminalBorder);
     endwin();
+
+    closeLogger();
     return 0;
 }

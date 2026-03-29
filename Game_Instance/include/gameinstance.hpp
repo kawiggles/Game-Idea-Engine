@@ -33,7 +33,7 @@ class GameInstance {
         int boardHeight; 
         
         // Public method to set up game
-        void makeGame(std::vector<std::unique_ptr<Piece>> &&runPieces, std::vector<std::unique_ptr<Piece>> &&enemyPieces, WINDOW * window);
+        void makeGame(std::vector<std::unique_ptr<Piece>> &&runPieces, std::vector<std::unique_ptr<Piece>> &&enemyPieces);
         std::vector<std::unique_ptr<Piece>> playerPieces;
         int setupEnemy();
         int addPiece(Piece * piece, int tileIndex);

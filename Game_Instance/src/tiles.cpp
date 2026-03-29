@@ -3,6 +3,7 @@
 #include "tiles.hpp"
 #include "types.hpp"
 #include "pieces.hpp"
+#include "logs.hpp"
 
 #include <ncurses.h>
 #include <vector>
@@ -133,8 +134,8 @@ std::unique_ptr<Tile> makeRandomTerrain(float noise, BiomeType biome, int x, int
     }
 }
 
-std::vector<int> generateRoad(Tile * startTile, Tile * endTile, std::unordered_map<int, std::unique_ptr<Tile>> &board, int width, int height, WINDOW * window) {
-    wprintw(window, "Starting A* search algorithm\n");
+std::vector<int> generateRoad(Tile * startTile, Tile * endTile, std::unordered_map<int, std::unique_ptr<Tile>> &board, int width, int height) {
+    log("Starting A* search algorithm");
     // Utility lambda functions:
     // copy of getTile because the board is not generated yet
     auto getTileId = [width](Tile *tile) { 
@@ -194,14 +195,14 @@ std::vector<int> generateRoad(Tile * startTile, Tile * endTile, std::unordered_m
     openSet.push(startTileId); // openSet := {start}
     checkSet.insert(startTileId);
     
-    wprintw(window, "Algorithm initiated at (%d, %d)\n", startTile->x+1, startTile->y+1);
-    wprintw(window, "Algorithm target is (%d, %d)\n", endTile->x+1, endTile->y+1);
+    log("\tAlgorithm initiated at (%d, %d)", startTile->x+1, startTile->y+1);
+    log("\tAlgorithm target is (%d, %d)", endTile->x+1, endTile->y+1);
 
     while (!(openSet.empty())) { // while openSet is not empty
         int current = openSet.top(); // current := the node in openSet having the lowest fScore[] value
                                  // Because the openSet comp lambda sorts by lowest f, it will always be the top of openSet
         if (current == getTileId(endTile)) { // if current = goal 
-            wprintw(window, "Road path found, generating path vector.\n");
+            log("\tRoad path found, generating path vector");
             std::vector<int> path;
             path.push_back(current); // total_path := {current}
 
@@ -232,7 +233,7 @@ std::vector<int> generateRoad(Tile * startTile, Tile * endTile, std::unordered_m
         }
 
     }
-    wprintw(window, "Algorithm failed.\n");
+    log("Algorithm failed.\n");
     std::vector<int> failure = { };
     return failure;
 }
