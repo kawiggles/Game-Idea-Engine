@@ -8,7 +8,24 @@
 #include <ctime>
 #include <cstdarg>
 
+#define DEBUG
+
+#ifndef DEBUG
+#define ASSERT(n)
+#define LOG
+#else
+#define ASSERT(n) \
+	if(!(n)) { \
+	debug("%s - Failed\n", #n); \
+	debug("At %s ", __TIME__); \
+	debug("in file %s ", __FILE__); \
+	debug("at line %d\n", __LINE__); \
+	exit(1); }
+#define LOG log
+#endif
+
 inline FILE * LOG_FILE = nullptr;
+inline FILE * DEBUG_FILE = nullptr;
 
 inline void initLogger() {
     LOG_FILE = fopen("logs/game_log.txt", "w");
@@ -16,9 +33,16 @@ inline void initLogger() {
         perror("Failed to open log file");
         return;
     }
+    DEBUG_FILE = fopen("logs/debug.txt", "w");
+    if (!DEBUG_FILE) {
+        perror("Failed to open debug file");
+        return;
+    }
     time_t currentTime = time(nullptr);
     fprintf(LOG_FILE, "=== Session Log Starting At: %s ===\n", ctime(&currentTime));
+    fprintf(DEBUG_FILE, "=== Debug Log Starting At: %s ===\n", ctime(&currentTime));
     fflush(LOG_FILE);
+    fflush(DEBUG_FILE);
 }
 
 inline void closeLogger() {
@@ -38,6 +62,8 @@ inline void log(const char * fmt, ...) {
     fprintf(LOG_FILE, "\n");
     fflush(LOG_FILE);
 }
+
+
 
 std::string getPieceType(const Piece * piece);
 std::string getBiomeType(const BiomeType biome);

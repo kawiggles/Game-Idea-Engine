@@ -79,7 +79,8 @@ enum class MissionType {
 };
 
 enum class LeaderType {
-    Scout
+    Scout,
+    MobLeader
 };
 
 namespace MoveResult {

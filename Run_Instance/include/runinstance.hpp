@@ -18,10 +18,11 @@ class RunInstance {
         int seed;
         LeaderType leader;
         Map map;
-        std::vector<Piece *> runPieces;
-        std::vector<GameInstance> gameInstances;
+        std::unordered_map<int, std::unique_ptr<Piece>> pieceInventory;
 
         // Public Methods
         std::vector<GameInstance> generateGames();
-        std::vector<Piece *> getInitialPieces();
+        std::unordered_map<int, std::unique_ptr<Piece>>  getInitialPieces();
+
+        bool checkFullInventory();
 };
