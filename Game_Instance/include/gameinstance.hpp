@@ -52,7 +52,7 @@ class GameInstance {
 
     private:
         std::vector<std::unique_ptr<Piece>> enemyPieces;
-        std::unordered_map<Piece *, Tile *>  piecePositions;
+        std::unordered_map<const Piece *, Tile *>  piecePositions;
         unsigned long seed;
 
         int isMissionComplete();

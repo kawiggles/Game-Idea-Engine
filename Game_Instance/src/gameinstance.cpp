@@ -76,6 +76,7 @@ void GameInstance::makeGame(std::vector<std::unique_ptr<Piece>> &&runPieces, std
         Tile  * endRoad;
         std::uniform_int_distribution<int> roadDis(0, boardWidth-1);
 
+        // TODO: add guards for potential infinite loop
         do {
             int roadStartX = roadDis(gen);
             startRoad = board[roadStartX].get();
@@ -89,7 +90,7 @@ void GameInstance::makeGame(std::vector<std::unique_ptr<Piece>> &&runPieces, std
         log("\tEnd of road is (%d, %d)", endRoad->x+1, endRoad->y+1);
 
         std::vector<int> road;
-        if (startRoad != nullptr && endRoad != nullptr) road = generateRoad(startRoad, endRoad, board, boardWidth, boardHeight);
+        road = generateRoad(startRoad, endRoad, board, boardWidth, boardHeight);
         for (int tile : road) {
             int nx = board[tile]->x;
             int ny = board[tile]->y;
@@ -215,7 +216,7 @@ std::vector<Move> GameInstance::getValidMoves(const Piece &piece, MoveType type)
     std::vector<Move> validTiles;
     validTiles.reserve((piece.maxCardinal+3 * 4) + (piece.maxDiagonal+3 * 4) + (2 * piece.rangedAttack.maxRange+2 * piece.rangedAttack.maxRange+2 + 2 * piece.rangedAttack.maxRange+2 + 1)+1); 
 
-    Tile * currentTile = piecePositions.at(const_cast<Piece*>(&piece));    
+    Tile * currentTile = piecePositions.at(&piece);    
     log("Running getValidMoves for %s at tile (%d, %d) looking for movetype %s\n", getPieceType(&piece).c_str(), currentTile->x+1, currentTile->y+1, getMoveType(type).c_str());
     int relativeStrengthMod = currentTile->getStrengthMod(piece);
     log("\tPiece strength: %d", piece.strength + relativeStrengthMod);
@@ -272,7 +273,7 @@ int GameInstance::movePiece(Piece * piece, Tile * target) {
     if (!pieceExists(piece)) return MoveResult::PieceNotInGame;
 
     Tile * currentTile = piecePositions[piece];
-    if (!piecePositions[currentTile->occupyingPiece]) return MoveResult::PieceNotOnBoard;
+    if (!piecePositions.count(currentTile->occupyingPiece)) return MoveResult::PieceNotOnBoard;
     log("Attempting to move %s at (%d, %d) to (%d, %d)", getPieceType(piece).c_str(), currentTile->x+1, currentTile->y+1, target->x+1, target->y+1);
 
     std::vector<Move> validTiles = getValidMoves(*piece, MoveType::Move);
@@ -297,7 +298,7 @@ int GameInstance::shootPiece(Piece * piece, Tile * target) {
     if (!pieceExists(piece)) return MoveResult::PieceNotInGame;
 
     Tile * currentTile = piecePositions[piece];
-    if (!piecePositions[currentTile->occupyingPiece]) return MoveResult::PieceNotOnBoard;
+    if (!piecePositions.count(currentTile->occupyingPiece)) return MoveResult::PieceNotOnBoard;
     log("%s at (%d, %d) attempting to shoot piece on tile (%d, %d)", getPieceType(piece).c_str(), currentTile->x+1, currentTile->y+1, target->x+1, target->y+1);
 
     if (!target->occupyingPiece) return MoveResult::TargetNotOnBoard;
@@ -352,7 +353,7 @@ int GameInstance::takeEnemyTurn() {
     log("\nTaking enemy turn... \n\n");
     std::vector<Move> allEnemyMoves;
     for (const std::unique_ptr<Piece> &piece : enemyPieces) {
-        if (piecePositions[piece.get()]) {
+        if (piecePositions.count(piece.get()) && piecePositions.at(piece.get())) {
             std::vector<Move> pieceValidMoves = getValidMoves(*piece, MoveType::Any);
             allEnemyMoves.insert(allEnemyMoves.end(), pieceValidMoves.begin(), pieceValidMoves.end());
         }
