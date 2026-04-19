@@ -16,14 +16,14 @@ class Piece {
         }
 
     public:
-        Piece(PieceMaterial m, PieceType t, bool o);
+        Piece(PieceMaterial m, PieceType t, Player o);
 
         PieceMaterial material;
         PieceType type;
         PieceCategory category;
         
         // Movement Stats
-        bool ownedByPlayer = true;
+        Player owner = Player::None;
         bool canMoveThroughPieces  = false;
         int strength = 1;
         int toughness = 1;

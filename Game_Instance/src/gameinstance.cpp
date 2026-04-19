@@ -109,7 +109,11 @@ void GameInstance::makeGame(std::vector<std::unique_ptr<Piece>> &&runPieces, std
             std::uniform_int_distribution<int> yDist(margin, boardHeight-margin-1);
             int objX = xDist(gen);
             int objY = yDist(gen);
+            
             board[objY * boardWidth + objX] = std::make_unique<Objective>(objX, objY);
+            objectives.reserve(1);
+            Objective * newObj = dynamic_cast<Objective *>(board.at(objY * boardWidth * objX).get());
+            objectives.push_back(newObj);
             log("\tObjective set at (%d, %d)\n", objX, objY);
             break;
         }
@@ -124,9 +128,8 @@ void GameInstance::makeGame(std::vector<std::unique_ptr<Piece>> &&runPieces, std
 
 // Essentially unnecessary, but helps with clarity when searching through adjacent x,y coordinates
 Tile * GameInstance::getTile(int x, int y) {
-    if (x < 0 || x >= boardWidth || y < 0 || y >= boardHeight) {
+    if (x < 0 || x >= boardWidth || y < 0 || y >= boardHeight)
         return nullptr;
-    }
     return board[y * boardWidth + x].get();
 }
 
@@ -134,7 +137,8 @@ int GameInstance::getTileId(const Tile &tile) { return tile.y * boardWidth + til
 
 // Using this in place of contains because I was dumb and used raw pointers everywhere, and both are O(n) efficiency
 bool GameInstance::pieceExists(Piece * piece) {
-    if (piece->ownedByPlayer) {
+    ASSERT(piece);
+    if (piece->owner == Player::Human) {
         for (const std::unique_ptr<Piece> &p : playerPieces) if (p.get() == piece) return true;
     } else {
         for (const std::unique_ptr<Piece> &p : enemyPieces) if (p.get() == piece) return true;
@@ -224,42 +228,36 @@ std::unordered_set<Move, MoveHash> GameInstance::getValidMoves(const Piece &piec
     log("\tPiece ranged strength: %d", piece.rangedAttack.strength + relativeRangedStrengthMod);
     int relativeRangeMax = currentTile->getRangeMaxMod();
     log("\tPiece ranged attack range: %d\n", piece.rangedAttack.maxRange + relativeRangeMax);
-    bool canCapture = false;
 
     // Rune Logic Happens Here
 
     if (type == MoveType::Any) {
         log("\tFinding all moves...");
-        for (Move move : getValidMovement(piece, currentTile, relativeStrengthMod))
-            validTiles.push_back(move);
-        for (Move move : getValidRangedAttacks(piece, currentTile, relativeRangedStrengthMod, relativeRangeMax))
-            validTiles.push_back(move);
+        validTiles.merge(getValidMovement(piece, currentTile, relativeStrengthMod));
+        validTiles.merge(getValidRangedAttacks(piece, currentTile, relativeRangedStrengthMod, relativeRangeMax));
+        if (currentTile->terrain == TerrainType::Objective) validTiles.insert(Move{MoveType::Capture, currentTile, currentTile});
+        return validTiles;
     } else if (type == MoveType::Move) {
         log("\tFinding moves...");
-        for (Move move : getValidMovement(piece, currentTile, relativeStrengthMod))
-            validTiles.push_back(move);
+        return getValidMovement(piece, currentTile, relativeStrengthMod);
     } else if (type == MoveType::Shoot) {
         log("\tFinding ranged attacks...");
-        for (Move move : getValidRangedAttacks(piece, currentTile, relativeRangedStrengthMod, relativeRangeMax))
-            validTiles.push_back(move);
-    } else if (type == MoveType::Capture && canCapture) {
+        return getValidRangedAttacks(piece, currentTile, relativeRangedStrengthMod, relativeRangeMax);
+    } else if (type == MoveType::Capture && currentTile->terrain == TerrainType::Objective) {
         log("\tFinding objective captures...");
-        validTiles.push_back(Move{MoveType::Capture, currentTile, currentTile});
+        validTiles.insert(Move{MoveType::Capture, currentTile, currentTile});
     }
-    log("Ending getValidMoves\n");
     return validTiles;
 }
 
 int GameInstance::addPiece(Piece * piece, int tileIndex) {
     log("Attempting to add %s at tile index %d", getPieceType(piece).c_str(), tileIndex);
-    if (tileIndex >= board.size()) return -1; // Fail condition 1, out of bounds
-    
-    if (!pieceExists(piece)) return -2; // Fail condition 2, piece not in game
+    ASSERT(tileIndex < board.size());
+    ASSERT(pieceExists(piece));
 
-    Tile * tile = board[tileIndex].get();
-    if (tile->occupyingPiece != nullptr) return -3; // Fail condition 3, tile occupied
-
-    if (tile->terrain == TerrainType::Water) return -4; // Fail condition 4, tile invalid
+    Tile * tile = board.at(tileIndex).get();
+    if (tile->occupyingPiece != nullptr) return -1; // Fail condition 1, tile occupied
+    if (tile->terrain == TerrainType::Water) return -2; // Fail condition 2, tile invalid
 
     tile->occupyingPiece = piece;
     piecePositions[piece] = tile;
@@ -267,79 +265,9 @@ int GameInstance::addPiece(Piece * piece, int tileIndex) {
     return 1;
 }
 
-int GameInstance::movePiece(Piece * piece, Tile * target) {
-    if (!target) return MoveResult::TargetOutOfBounds;
-    
-    if (!pieceExists(piece)) return MoveResult::PieceNotInGame;
-
-    Tile * currentTile = piecePositions[piece];
-    if (!piecePositions.count(currentTile->occupyingPiece)) return MoveResult::PieceNotOnBoard;
-    log("Attempting to move %s at (%d, %d) to (%d, %d)", getPieceType(piece).c_str(), currentTile->x+1, currentTile->y+1, target->x+1, target->y+1);
-
-    std::vector<Move> validTiles = getValidMoves(*piece, MoveType::Move);
-
-    for (Move move : validTiles) {
-        if (target == move.to) {
-            if (target->occupyingPiece) piecePositions[target->occupyingPiece] = nullptr;
-            currentTile->occupyingPiece = nullptr;
-            target->occupyingPiece = piece;
-            piecePositions[piece] = target;
-            log("\tPiece movement successful\n");
-            return MoveResult::Success;
-        }
-    }
-    log("\tPiece movement unsuccessful\n");
-    return MoveResult::InvalidMove;
-}
-
-int GameInstance::shootPiece(Piece * piece, Tile * target) {
-    if (!target) return MoveResult::TargetOutOfBounds;
-
-    if (!pieceExists(piece)) return MoveResult::PieceNotInGame;
-
-    Tile * currentTile = piecePositions[piece];
-    if (!piecePositions.count(currentTile->occupyingPiece)) return MoveResult::PieceNotOnBoard;
-    log("%s at (%d, %d) attempting to shoot piece on tile (%d, %d)", getPieceType(piece).c_str(), currentTile->x+1, currentTile->y+1, target->x+1, target->y+1);
-
-    if (!target->occupyingPiece) return MoveResult::TargetNotOnBoard;
-
-    std::vector<Move> validTiles = getValidMoves(*piece, MoveType::Shoot);
-    for (Move move : validTiles) {
-        if (target == move.to) {
-            piecePositions[move.to->occupyingPiece] = nullptr;
-            move.to->occupyingPiece = nullptr;
-            log("\tShoot action successful\n");
-            return MoveResult::Success;
-        }
-    }
-    log("\tShoot action unsuccessful\n");
-    return MoveResult::InvalidMove;
-}
-
-int GameInstance::captureObjective(Piece * piece) {
-
-    return MoveResult::InvalidMove;
-}
-
-int GameInstance::takePlayerTurn(MoveType moveType, Piece * piece, int coord) {
-    log("\nTaking player turn... \n\n");
-
-    switch (moveType) {
-        case MoveType::Move: 
-            return movePiece(piece, board[coord].get());
-        case MoveType::Shoot:
-            return shootPiece(piece, board[coord].get());
-        case MoveType::Capture:
-            return captureObjective(piece);
-        default:
-            return MoveResult::InvalidMove;
-    }
-}
-
 int GameInstance::setupEnemy() {
     log("Running setupEnemy...\n");
-    std::random_device rd;
-    std::mt19937 gen(rd());
+    std::mt19937 gen(seed);
     std::uniform_int_distribution disX(0, boardWidth - 1);
 
     for (int i = 0; i < enemyPieces.size(); i++) {
@@ -349,32 +277,99 @@ int GameInstance::setupEnemy() {
     return 1;
 }
 
-int GameInstance::takeEnemyTurn() {
+GameInstance::Status GameInstance::makePlayerMove(const Move &move, const std::unordered_set<Move, MoveHash> validMoves) {
+    log("\nMaking player move... \n\n");
+    ASSERT(move.to);
+    Piece * piece = move.from->occupyingPiece;
+    ASSERT(pieceExists(piece));
+    ASSERT(piecePositions.count(move.from->occupyingPiece));
+
+    if (!validMoves.count(move)) return Status::Redo;
+
+    switch (move.type) {
+        case MoveType::Move: 
+            log("Moving %s at (%d, %d) to (%d, %d)", getPieceType(piece).c_str(), move.from->x+1, move.from->y+1, move.to->x+1, move.to->y+1);
+            if (move.to->occupyingPiece) piecePositions.at(move.to->occupyingPiece) = nullptr;
+            move.from->occupyingPiece = nullptr;
+            move.to->occupyingPiece = piece;
+            piecePositions[piece] = move.to;
+            return getWinStatus();
+        case MoveType::Shoot:
+            ASSERT(pieceExists(move.to->occupyingPiece));
+            log("Piece %s at (%d, %d) shooting piece at (%d, %d)", getPieceType(piece).c_str(), move.from->x+1, move.from->y+1, move.to->x+1, move.to->y+1);
+            piecePositions.at(move.to->occupyingPiece) = nullptr;
+            move.to->occupyingPiece = nullptr;
+            return getWinStatus();
+        case MoveType::Capture: {
+            log("Piece %s attempting to capture objective at (%d, %d)", getPieceType(piece).c_str(), move.from->x+1, move.from->y+1);
+            ASSERT(move.from->terrain == TerrainType::Objective);
+            Objective * obj = dynamic_cast<Objective *>(move.from);
+            obj->isCapturedBy = Player::Human;
+            return getWinStatus();
+        }
+        default:
+            return Status::Redo;
+    }
+}
+
+GameInstance::Status GameInstance::takeEnemyTurn() {
     log("\nTaking enemy turn... \n\n");
-    std::vector<Move> allEnemyMoves;
+    // The construction of this data structure will change as I figure out how the algo works
+    std::unordered_set<Move, MoveHash> allEnemyMoves;
     for (const std::unique_ptr<Piece> &piece : enemyPieces) {
         if (piecePositions.count(piece.get()) && piecePositions.at(piece.get())) {
-            std::vector<Move> pieceValidMoves = getValidMoves(*piece, MoveType::Any);
-            allEnemyMoves.insert(allEnemyMoves.end(), pieceValidMoves.begin(), pieceValidMoves.end());
+            allEnemyMoves.merge(getValidMoves(*piece, MoveType::Any));
         }
     }
     log("\tList of possible enemy moves generated");
     
-    if (allEnemyMoves.empty()) return MoveResult::PlayerWin;
+    if (allEnemyMoves.empty()) return Status::PlayerWin;
 
-    Move move = enemyAlgoRandom(allEnemyMoves, board);
-    log("\tEnemy move selected");
+    Move move = enemyAlgoBasic(allEnemyMoves, board);
+    log("\tEnemy move selected, making move...");
+
+    ASSERT(move.to);
+    Piece * piece = move.from->occupyingPiece;
+    ASSERT(pieceExists(piece));
+    ASSERT(piecePositions.count(move.from->occupyingPiece));
 
     switch (move.type) {
         case MoveType::Move: 
-            log("Enemy %s at (%d, %d) attempt to move to (%d, %d)\n", getPieceType(move.from->occupyingPiece).c_str(), move.from->x+1, move.from->y+1, move.to->x+1, move.from->y+1);
-            return movePiece(move.from->occupyingPiece, move.to);
+            log("Moving %s at (%d, %d) to (%d, %d)\n", getPieceType(piece).c_str(), move.from->x+1, move.from->y+1, move.to->x+1, move.to->y+1);
+            if (move.to->occupyingPiece) piecePositions.at(move.to->occupyingPiece) = nullptr;
+            move.from->occupyingPiece = nullptr;
+            move.to->occupyingPiece = piece;
+            piecePositions[piece] = move.to;
+            return getWinStatus();
         case MoveType::Shoot:
-            return shootPiece(move.from->occupyingPiece, move.to);
-        case MoveType::Capture:
-            enemyHoldsObjective = true;
-            return 3;
+            ASSERT(pieceExists(move.to->occupyingPiece));
+            log("Piece %s at (%d, %d) shooting piece at (%d, %d)\n", getPieceType(piece).c_str(), move.from->x+1, move.from->y+1, move.to->x+1, move.to->y+1);
+            piecePositions.at(move.to->occupyingPiece) = nullptr;
+            move.to->occupyingPiece = nullptr;
+            return getWinStatus();
+        case MoveType::Capture: {
+            log("Piece %s attempting to capture objective at (%d, %d)\n", getPieceType(piece).c_str(), move.from->x+1, move.from->y+1);
+            ASSERT(move.from->terrain == TerrainType::Objective);
+            Objective * obj = dynamic_cast<Objective *>(move.from);
+            obj->isCapturedBy = Player::CPU;
+            return getWinStatus();
+        }
         default:
-            return MoveResult::InvalidMove;
+            return Status::Redo;
     }
+}
+
+GameInstance::Status GameInstance::getWinStatus() {
+    switch (mission) {
+        case MissionType::HoldThePoint:
+            if (objectives[0]->isCapturedBy == Player::Human) 
+                return Status::PlayerWin;
+            else if (objectives[0]->isCapturedBy == Player::CPU)
+                return Status::EnemyWin;
+            else
+                return Status::Next;
+        default:
+            debug("Error: no valid mission type");
+    }
+    return Status::Quit;
 }

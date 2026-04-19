@@ -8,8 +8,8 @@
  * Also this makes it easy for me to adjust piece stats for balancing, so ha.
  */
 
-Piece::Piece(PieceMaterial m, PieceType t, bool o)
-    : id(nextId()), material(m), type(t), ownedByPlayer(o) {
+Piece::Piece(PieceMaterial m, PieceType t, Player o)
+    : id(nextId()), material(m), type(t), owner(o) {
 
     switch(type) {
         case PieceType::Light:

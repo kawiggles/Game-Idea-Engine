@@ -11,6 +11,13 @@
  *     - MissionType determines the objective of a GameInstance
  *     - LeaderType determines the initial pieces of a RunInstance and the Leader Rule
  */
+
+enum class Player {
+    None,
+    Human,
+    CPU
+};
+
 enum class PieceType {
     Light,
     Shield,
@@ -82,17 +89,6 @@ enum class LeaderType {
     Scout,
     MobLeader
 };
-
-namespace MoveResult {
-    constexpr int EnemyWin = 3;
-    constexpr int PlayerWin = 2;
-    constexpr int Success = 1;
-    constexpr int InvalidMove = 0;
-    constexpr int TargetOutOfBounds = -1;
-    constexpr int PieceNotInGame = -2;
-    constexpr int PieceNotOnBoard = -3;
-    constexpr int TargetNotOnBoard = -4;
-}
 
 struct Direction {
     int dx, dy;

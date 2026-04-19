@@ -134,6 +134,7 @@ struct Objective : Tile {
     ~Objective() override = default;
     TerrainType terrain = TerrainType::Objective;
     int getToughnessMod() override;
+    Player isCapturedBy = Player::None;
 };
 
 

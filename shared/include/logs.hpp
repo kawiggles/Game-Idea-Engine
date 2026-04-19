@@ -20,6 +20,7 @@
 	debug("At %s ", __TIME__); \
 	debug("in file %s ", __FILE__); \
 	debug("at line %d\n", __LINE__); \
+    closeLogger(); \
 	exit(1); }
 #define LOG log
 #endif
@@ -51,6 +52,11 @@ inline void closeLogger() {
         fclose(LOG_FILE);
         LOG_FILE = nullptr;
     }
+    if (DEBUG_FILE) {
+        fprintf(DEBUG_FILE, "=== End Debug Log ===\n");
+        fclose(DEBUG_FILE);
+        DEBUG_FILE = nullptr;
+    }
 }
 
 inline void log(const char * fmt, ...) {
@@ -63,7 +69,15 @@ inline void log(const char * fmt, ...) {
     fflush(LOG_FILE);
 }
 
-
+inline void debug(const char * fmt, ...) {
+    if (!DEBUG_FILE) return;
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(DEBUG_FILE, fmt, args);
+    va_end(args);
+    fprintf(DEBUG_FILE, "\n");
+    fflush(DEBUG_FILE);
+}
 
 std::string getPieceType(const Piece * piece);
 std::string getBiomeType(const BiomeType biome);

@@ -56,23 +56,26 @@ class GameInstance {
         // Public members and methods to run game
         std::unordered_map<int, std::unique_ptr<Tile>> board;
         int turnCount;
-        int status; // <0: redo move
-                    // 1: go to next turn
-                    // 2: player wins
-                    // 3: enemy wins
-                    // 4: quit
-        int takePlayerTurn(MoveType moveType, Piece * piece, int coord);
-        int takeEnemyTurn();
-        std::vector<Move> getValidMoves(const Piece &piece, MoveType type);
+
+        enum class Status {
+            Redo,
+            Next,
+            PlayerWin,
+            EnemyWin,
+            Quit
+        };
+        Status status;
+
+        Status makePlayerMove(const Move &move, const std::unordered_set<Move, MoveHash> validMoves);
+        Status takeEnemyTurn();
+        Status getWinStatus();
+        std::unordered_set<Move, MoveHash> getValidMoves(const Piece &piece, MoveType type);
 
     private:
         std::vector<std::unique_ptr<Piece>> enemyPieces;
         std::unordered_map<const Piece *, Tile *>  piecePositions;
+        std::vector<Objective *> objectives;
         unsigned long seed;
-
-        int isMissionComplete();
-        bool playerHoldsObjective;
-        bool enemyHoldsObjective;
 
         // Two methods to get tiles, one from an (x,y) coordinate, and the other from a piece object.
         Tile * getTile(int x, int y);
