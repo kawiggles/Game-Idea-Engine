@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <ncurses.h>
 #include <vector>
+#include <unordered_set>
 #include <random>
 #include <memory>
 
@@ -141,9 +142,9 @@ bool GameInstance::pieceExists(Piece * piece) {
     return false;
 }
 
-std::vector<Move> GameInstance::getValidMovement(const Piece &piece, Tile * currentTile, int relativeStrengthMod) {
+std::unordered_set<Move, MoveHash> GameInstance::getValidMovement(const Piece &piece, Tile * currentTile, int relativeStrengthMod) {
     log("\tgetValidMovement running for %s at tile (%d, %d)", getPieceType(&piece).c_str(), currentTile->x, currentTile->y);
-    std::vector<Move> validTiles;
+    std::unordered_set<Move, MoveHash> validTiles;
 
     for (int i = 0; i < 8; i++) {
         log("\t\tChecking vector [%d, %d]", vectors[i].dx, vectors[i].dy);
@@ -162,17 +163,17 @@ std::vector<Move> GameInstance::getValidMovement(const Piece &piece, Tile * curr
             // Piece capture logic here
             if (checkTile->occupyingPiece) { 
                 Piece * checkPiece = checkTile->occupyingPiece;
-                if (checkPiece->ownedByPlayer == piece.ownedByPlayer) { 
+                if (checkPiece->owner == piece.owner) { 
                     if (piece.canMoveThroughPieces) continue;
                 } else {
                     log("\t\t\t\tValid occupied tile found at (%d, %d)", checkTile->x+1, checkTile->y+1);
                     if (piece.strength + relativeStrengthMod >= checkPiece->toughness + checkTile->getToughnessMod())
-                        validTiles.push_back(Move{MoveType::Move, currentTile, checkTile});
+                        validTiles.insert(Move{MoveType::Move, currentTile, checkTile});
                 }
                 break;
             } else {
                 log("\t\t\t\tValid tile found at (%d, %d)", checkTile->x+1, checkTile->y+1);
-                validTiles.push_back(Move{MoveType::Move, currentTile, checkTile});
+                validTiles.insert(Move{MoveType::Move, currentTile, checkTile});
 
             }
         }
@@ -181,9 +182,9 @@ std::vector<Move> GameInstance::getValidMovement(const Piece &piece, Tile * curr
     return validTiles;
 }
 
-std::vector<Move> GameInstance::getValidRangedAttacks(const Piece &piece, Tile * currentTile, int relativeRangedStrengthMod, int relativeRangeMax) {
+std::unordered_set<Move, MoveHash> GameInstance::getValidRangedAttacks(const Piece &piece, Tile * currentTile, int relativeRangedStrengthMod, int relativeRangeMax) {
     log("\tgetValidRangedAttacks starting for %s at tile (%d, %d)", getPieceType(&piece).c_str(), currentTile->x+1, currentTile->y+1);
-    std::vector<Move> validTiles;
+    std::unordered_set<Move, MoveHash> validTiles;
     int evalMaxRange = piece.rangedAttack.maxRange + relativeRangeMax;
     int evalRangedStrength = piece.rangedAttack.strength + relativeRangedStrengthMod;
 
@@ -197,9 +198,9 @@ std::vector<Move> GameInstance::getValidRangedAttacks(const Piece &piece, Tile *
                 if (nx >= 0 && nx < boardWidth && ny >=0 && ny < boardHeight) {
                     Tile * searchTile = getTile(nx, ny);
                     log("\t\tChecking tile (%d, %d)", nx+1, ny+1);
-                    if (searchTile->occupyingPiece && searchTile->occupyingPiece->ownedByPlayer != piece.ownedByPlayer) {
+                    if (searchTile->occupyingPiece && searchTile->occupyingPiece->owner != piece.owner) {
                         if (evalRangedStrength >= searchTile->occupyingPiece->toughness + searchTile->getToughnessMod()) {
-                            validTiles.push_back(Move{MoveType::Shoot, currentTile, searchTile});
+                            validTiles.insert(Move{MoveType::Shoot, currentTile, searchTile});
                             log("\t\t\tValid ranged attack target found at (%d, %d)", nx+1, ny+1);
                         }
                     }
@@ -212,9 +213,8 @@ std::vector<Move> GameInstance::getValidRangedAttacks(const Piece &piece, Tile *
 }
 
 // This function creates an array of valid move structs for a passed piece object 
-std::vector<Move> GameInstance::getValidMoves(const Piece &piece, MoveType type) { 
-    std::vector<Move> validTiles;
-    validTiles.reserve((piece.maxCardinal+3 * 4) + (piece.maxDiagonal+3 * 4) + (2 * piece.rangedAttack.maxRange+2 * piece.rangedAttack.maxRange+2 + 2 * piece.rangedAttack.maxRange+2 + 1)+1); 
+std::unordered_set<Move, MoveHash> GameInstance::getValidMoves(const Piece &piece, MoveType type) { 
+    std::unordered_set<Move, MoveHash> validTiles;
 
     Tile * currentTile = piecePositions.at(&piece);    
     log("Running getValidMoves for %s at tile (%d, %d) looking for movetype %s\n", getPieceType(&piece).c_str(), currentTile->x+1, currentTile->y+1, getMoveType(type).c_str());

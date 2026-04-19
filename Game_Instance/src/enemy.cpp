@@ -3,16 +3,28 @@
 #include "tiles.hpp"
 #include "logs.hpp"
 
-#include <vector>
+#include <unordered_set>
 #include <unordered_map>
 #include <memory>
-#include <random>
 
-Move enemyAlgoRandom(std::vector<Move> possibleMoves, const std::unordered_map<int, std::unique_ptr<Tile>> &board) {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> distrib(0, possibleMoves.size()-1);
-    int randomIndex = distrib(gen);
+Move enemyAlgoBasic(std::unordered_set<Move, MoveHash> possibleMoves, const std::unordered_map<int, std::unique_ptr<Tile>> &board) {
+    log("Running basic enemy algorithm");
+    Move bestMove;
+    int bestMoveScore = 0;
+    for (Move m : possibleMoves) {
+        int moveScore = 0;
+        if (m.type == MoveType::Capture) moveScore += 1000;
+        if (m.to->terrain == TerrainType::Objective) moveScore += 1000;
+        if (m.to->occupyingPiece) moveScore += 100;
+        if (m.to->terrain == TerrainType::Road) moveScore += 20;
+        moveScore += (abs(m.to->x) - abs(m.from->y)) + (abs(m.to->y) - abs(m.from->y));
+        
+        if (moveScore > bestMoveScore) {
+            bestMove = m;
+            bestMoveScore = moveScore;
+        }
+    }
     
-    return possibleMoves[randomIndex];
+    log("Best move found");
+    return bestMove;
 }

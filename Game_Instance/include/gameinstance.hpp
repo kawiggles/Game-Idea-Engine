@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cstddef>
 #include <memory>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include <ncurses.h>
 
 #include "tiles.hpp"
@@ -16,6 +18,19 @@ struct Move {
     MoveType type;
     Tile * from;
     Tile * to;
+
+    bool operator==(const Move &other) const {
+        return type == other.type && to == other.to && from == other.from;
+    }
+};
+
+struct MoveHash {
+    size_t operator()(const Move &m) const {
+        size_t h1 = std::hash<Tile *>{}(m.from);
+        size_t h2 = std::hash<Tile *>{}(m.to);
+        size_t h3 = std::hash<int>{}(static_cast<int>(m.type));
+        return h1 ^ (h2 << 1) ^ (h3 << 2);
+    }
 };
 
 // An instance of a game. Basically contains everything needed to run the core mechanics of the game
@@ -65,11 +80,8 @@ class GameInstance {
         Tile * getPieceTile(const Piece &piece);
 
         // Methods to interact with pieces
-        std::vector<Move> getValidMovement(const Piece &piece, Tile * currentTile, int relativeStrengthMod);
-        std::vector<Move> getValidRangedAttacks(const Piece &piece, Tile * currentTile, int relativeRangedStrenghtMod, int relativeRangeMax);
-        int movePiece(Piece * piece, Tile * target);
-        int shootPiece(Piece * piece, Tile * target);
-        int captureObjective(Piece * piece);
+        std::unordered_set<Move, MoveHash> getValidMovement(const Piece &piece, Tile * currentTile, int relativeStrengthMod);
+        std::unordered_set<Move, MoveHash> getValidRangedAttacks(const Piece &piece, Tile * currentTile, int relativeRangedStrenghtMod, int relativeRangeMax);
         bool pieceExists(Piece * piece);
 };
 
