@@ -25,71 +25,72 @@
  * generateRoad uses an A* search algorithm to generate a vector of tiles which are converted to the road terrain type in makeGame
  */
 
-int Water::getMovementMod(const Piece &piece) { return -1000; }
-int Forest::getMovementMod(const Piece &piece) {
+// TODO: change all of these methods to const
+int Water::getMovementMod(const Piece &piece) const { return -1000; }
+int Forest::getMovementMod(const Piece &piece) const {
     if ((piece.category == PieceCategory::Cavalry && 
          piece.type != PieceType::LCavalry) || 
          piece.category == PieceCategory::Siege) return -1;
     return 0;
 }
-int Mountain::getMovementMod(const Piece &piece) {
+int Mountain::getMovementMod(const Piece &piece) const {
     if (piece.category == PieceCategory::Cavalry || 
         piece.category == PieceCategory::Siege) return -1000;
     return -1;
 }
-int Road::getRoadMovementMod(const Piece &piece, Tile * nextTile) {
+int Road::getRoadMovementMod(const Piece &piece, Tile * nextTile) const {
     if (nextTile != nullptr &&
         nextTile->terrain != TerrainType::Water &&
         nextTile->terrain == TerrainType::Road) return 1;
     return 0;
 }
-int Desert::getMovementMod(const Piece &piece) { return -1; }
-int Jungle::getMovementMod(const Piece &piece) {
+int Desert::getMovementMod(const Piece &piece) const { return -1; }
+int Jungle::getMovementMod(const Piece &piece) const {
     if (piece.category == PieceCategory::Siege) return -100;
     int mod = 0;
     if (!(piece.type == PieceType::Light || piece.type == PieceType::LCavalry)) mod--;
     if (piece.category == PieceCategory::Cavalry) mod--;
     return mod;
 }
-int Peak::getMovementMod(const Piece &piece) { return -1000; }
-int SnowField::getMovementMod(const Piece &piece) { return -1; }
+int Peak::getMovementMod(const Piece &piece) const { return -1000; }
+int SnowField::getMovementMod(const Piece &piece) const { return -1; }
 
-int Forest::getToughnessMod() { return 1; }
-int Mountain::getToughnessMod() { return 1; }
-int Desert::getToughnessMod() { return -1; }
-int Jungle::getToughnessMod() { return 1; }
-int Peak::getToughnessMod() { return 2; }
-int Objective::getToughnessMod() { return 1; }
+int Forest::getToughnessMod() const { return 1; }
+int Mountain::getToughnessMod() const { return 1; }
+int Desert::getToughnessMod() const { return -1; }
+int Jungle::getToughnessMod() const { return 1; }
+int Peak::getToughnessMod() const { return 2; }
+int Objective::getToughnessMod() const { return 1; }
 
-int Field::getStrengthMod(const Piece &piece) {
+int Field::getStrengthMod(const Piece &piece) const {
     if (piece.category == PieceCategory::Cavalry) return 1;
     return 0;
 }
-int Forest::getStrengthMod(const Piece &piece) {
+int Forest::getStrengthMod(const Piece &piece) const {
     if (piece.category == PieceCategory::Infantry) return 1;
     return 0;
 }
-int Road::getStrengthMod(const Piece &piece) {
+int Road::getStrengthMod(const Piece &piece) const {
     if (piece.category == PieceCategory::Cavalry) return 1;
     return 0;
 }
-int Desert::getStrengthMod(const Piece &piece) { return -1; }
-int Jungle::getStrengthMod(const Piece &piece) {
+int Desert::getStrengthMod(const Piece &piece) const { return -1; }
+int Jungle::getStrengthMod(const Piece &piece) const {
     if (piece.type == PieceType::Light || piece.type == PieceType::LCavalry) return 0;
     return -1;
 }
 
-int Mountain::getRangedStrengthMod(const Piece &piece) {
+int Mountain::getRangedStrengthMod(const Piece &piece) const {
     if (piece.category == PieceCategory::Siege) return 1;
     return 0;
 }
-int Jungle::getRangedStrengthMod(const Piece &piece) { return -1; }
-int Peak::getRangedStrengthMod(const Piece &piece) { return -1; }
+int Jungle::getRangedStrengthMod(const Piece &piece) const { return -1; }
+int Peak::getRangedStrengthMod(const Piece &piece) const { return -1; }
 
-int Forest::getRangeMaxMod() { return -1; }
-int Mountain::getRangeMaxMod() { return 1; }
-int Jungle::getRangeMaxMod() { return -1; }
-int Peak::getRangeMaxMod() { return 1; }
+int Forest::getRangeMaxMod() const { return -1; }
+int Mountain::getRangeMaxMod() const { return 1; }
+int Jungle::getRangeMaxMod() const { return -1; }
+int Peak::getRangeMaxMod() const { return 1; }
 
 
 

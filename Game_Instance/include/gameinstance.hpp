@@ -66,14 +66,17 @@ class GameInstance {
         };
         Status status;
 
+        Status executeMove(const Move &move);
         Status makePlayerMove(const Move &move, const std::unordered_set<Move, MoveHash> validMoves);
         Status takeEnemyTurn();
         Status getWinStatus();
-        std::unordered_set<Move, MoveHash> getValidMoves(const Piece &piece, MoveType type);
+        std::unordered_set<Move, MoveHash> getValidMoves(Tile &tile, MoveType type);
+        std::unordered_set<Move, MoveHash> getValidMovement(Tile &tile, int relativeStrengthMod);
+        std::unordered_set<Move, MoveHash> getValidRangedAttacks(Tile &tile, int relativeRangedStrenghtMod, int relativeRangeMax);
 
     private:
         std::vector<std::unique_ptr<Piece>> enemyPieces;
-        std::unordered_map<const Piece *, Tile *>  piecePositions;
+        std::unordered_map<const Piece *, Tile *> piecePositions;
         std::vector<Objective *> objectives;
         unsigned long seed;
 
@@ -83,8 +86,6 @@ class GameInstance {
         Tile * getPieceTile(const Piece &piece);
 
         // Methods to interact with pieces
-        std::unordered_set<Move, MoveHash> getValidMovement(const Piece &piece, Tile * currentTile, int relativeStrengthMod);
-        std::unordered_set<Move, MoveHash> getValidRangedAttacks(const Piece &piece, Tile * currentTile, int relativeRangedStrenghtMod, int relativeRangeMax);
         bool pieceExists(Piece * piece);
 };
 
