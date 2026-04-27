@@ -2,8 +2,8 @@
 #include "types.hpp"
 #include "pieces.hpp"
 
-std::string getPieceType(const Piece * piece) {
-    switch(piece->type) {
+std::string getPieceType(const Piece &piece) {
+    switch(piece.type) {
         case PieceType::Light:      return  "Light Infantry";
         case PieceType::Shield:     return  "Shield Infantry";
         case PieceType::Elite:      return  "Elite Infantry";
@@ -58,6 +58,6 @@ std::string getMoveType(const MoveType move) {
         case MoveType::Shoot:   return  "Shoot";
         case MoveType::Capture: return  "Capture";
         case MoveType::Any:     return  "All";
-        default:                return  "Unknown";
+        default:                return  "Null";
     }
 }

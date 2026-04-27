@@ -55,7 +55,7 @@ class GameInstance {
 
         // Public members and methods to run game
         std::unordered_map<int, std::unique_ptr<Tile>> board;
-        int turnCount;
+        int turnCount = 0;
 
         enum class Status {
             Redo,
@@ -67,12 +67,9 @@ class GameInstance {
         Status status;
 
         Status executeMove(const Move &move);
-        Status makePlayerMove(const Move &move, const std::unordered_set<Move, MoveHash> validMoves);
         Status takeEnemyTurn();
         Status getWinStatus();
         std::unordered_set<Move, MoveHash> getValidMoves(Tile &tile, MoveType type);
-        std::unordered_set<Move, MoveHash> getValidMovement(Tile &tile, int relativeStrengthMod);
-        std::unordered_set<Move, MoveHash> getValidRangedAttacks(Tile &tile, int relativeRangedStrenghtMod, int relativeRangeMax);
 
     private:
         std::vector<std::unique_ptr<Piece>> enemyPieces;
@@ -80,12 +77,10 @@ class GameInstance {
         std::vector<Objective *> objectives;
         unsigned long seed;
 
-        // Two methods to get tiles, one from an (x,y) coordinate, and the other from a piece object.
         Tile * getTile(int x, int y);
-        int getTileId(const Tile &tile);
-        Tile * getPieceTile(const Piece &piece);
-
-        // Methods to interact with pieces
         bool pieceExists(Piece * piece);
+        
+        std::unordered_set<Move, MoveHash> getValidMovement(Tile &tile, int relativeStrengthMod);
+        std::unordered_set<Move, MoveHash> getValidRangedAttacks(Tile &tile, int relativeRangedStrenghtMod, int relativeRangeMax);
 };
 

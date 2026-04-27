@@ -1,6 +1,5 @@
 add_library(Run_Instance STATIC
     src/runinstance.cpp
-    src/inventory.cpp
 )
 
 target_include_directories(Run_Instance

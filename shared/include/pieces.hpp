@@ -21,9 +21,9 @@ class Piece {
         PieceMaterial material;
         PieceType type;
         PieceCategory category;
+        Player owner = Player::None;
         
         // Movement Stats
-        Player owner = Player::None;
         bool canMoveThroughPieces  = false;
         int strength = 1;
         int toughness = 1;

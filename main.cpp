@@ -1,9 +1,10 @@
-#include "printboards.hpp"
+#include "panels.hpp"
 #include "pieces.hpp"
 #include "tiles.hpp"
 #include "gameinstance.hpp"
 #include "types.hpp"
 #include "logs.hpp"
+#include "interface.hpp"
 
 #include <assert.h>
 #include <random>
@@ -12,13 +13,12 @@
 
 int main() {
     initLogger();
-
     initscr();
+    keypad(stdscr, TRUE);
     noecho();
     cbreak();
-    keypad(stdscr, TRUE);
-    initColors();
 
+    // TODO: change how game seeds are collected
     int terminalHeight = LINES/2;
     int terminalStartY = LINES - terminalHeight;
     WINDOW * terminalBorder = newwin(terminalHeight, COLS, terminalStartY, 0);
@@ -79,19 +79,19 @@ int main() {
 
     // Create arrays of test of pieces
     std::vector<std::unique_ptr<Piece>> testPlayerPieces;
-    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, true));
-    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, true));
-    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Elite, true));
-    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Stone, PieceType::LCavalry, true));
-    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Stone, PieceType::LCavalry, true));
+    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, Player::Human));
+    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, Player::Human));
+    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Elite, Player::Human));
+    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Stone, PieceType::LCavalry, Player::Human));
+    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Stone, PieceType::LCavalry, Player::Human));
     log("Player pieces created...");
     
     std::vector<std::unique_ptr<Piece>> testEnemyPieces;
-    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, false));
-    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Shield, false));
-    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Elite, false));
-    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, false));
-    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Shield, false));
+    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, Player::CPU));
+    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Shield, Player::CPU));
+    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Elite, Player::CPU));
+    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, Player::CPU));
+    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Shield, Player::CPU));
     log("Enemy pieces created...");
     
     log("Defining game instance attributes...");
@@ -109,20 +109,22 @@ int main() {
 
     wprintw(terminalWindow, "Press Enter to generate game instance...\n");
     wgetch(terminalWindow);
+    wclear(terminalBorder);
+    wrefresh(terminalBorder);
+    delwin(terminalBorder);
+    wclear(terminalWindow);
     wrefresh(terminalWindow);
+    delwin(terminalWindow);
 
+    log("Game Instance made, setting up game");
     GameInstance testGame(gameSeed, randomBiome, MissionType::HoldThePoint, randomOctave, roadBool);
     testGame.makeGame(std::move(testPlayerPieces), std::move(testEnemyPieces));
-    wprintw(terminalWindow, "Game Instance made, setting up game\n");
-    wrefresh(terminalWindow);
-    setupGame(testGame, terminalWindow);
-    runGame(testGame, true, terminalWindow);
+    
+    GameInterface testInterface(&testGame);
+    testInterface.initColors();
+    testInterface.setup();
+    testInterface.run();
 
-    wprintw(terminalWindow, "\nGame exiting...");
-    wgetch(terminalWindow);
-
-    destroyWindow(terminalWindow);
-    destroyWindow(terminalBorder);
     endwin();
 
     closeLogger();

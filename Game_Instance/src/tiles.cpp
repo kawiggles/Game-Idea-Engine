@@ -1,5 +1,3 @@
-#pragma once
-
 #include "tiles.hpp"
 #include "types.hpp"
 #include "pieces.hpp"

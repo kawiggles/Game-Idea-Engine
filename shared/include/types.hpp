@@ -54,7 +54,8 @@ enum class MoveType {
     Move,
     Shoot,
     Capture,
-    Any
+    Any,
+    Null
 };
 
 enum class TerrainType {

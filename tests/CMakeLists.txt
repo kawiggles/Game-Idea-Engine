@@ -1,13 +1,5 @@
-add_library(tests STATIC
-    src/main.cpp
-    src/printboards.cpp
-)
+add_executable(main_test test.cpp)
 
-target_include_directories(tests
-    PRIVATE 
-        src/
-        ${CMAKE_SOURCE_DIR}/Game_Instance/include
-    PUBLIC include/
-)
+target_link_libraries(main_test PRIVATE Game_Instance Run_Instance shared ncurses ${CURSES_LIBRARIES})
 
-target_link_libraries(tests PRIVATE shared ${CURSES_LIBRARIES})
+add_test(NAME main_test COMMAND test)

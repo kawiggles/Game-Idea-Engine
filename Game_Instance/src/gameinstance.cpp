@@ -112,7 +112,7 @@ void GameInstance::makeGame(std::vector<std::unique_ptr<Piece>> &&runPieces, std
             
             board[objY * boardWidth + objX] = std::make_unique<Objective>(objX, objY);
             objectives.reserve(1);
-            Objective * newObj = dynamic_cast<Objective *>(board.at(objY * boardWidth * objX).get());
+            Objective * newObj = dynamic_cast<Objective *>(board.at(objY * boardWidth + objX).get());
             objectives.push_back(newObj);
             log("\tObjective set at (%d, %d)\n", objX, objY);
             break;
@@ -132,8 +132,6 @@ Tile * GameInstance::getTile(int x, int y) {
         return nullptr;
     return board[y * boardWidth + x].get();
 }
-
-int GameInstance::getTileId(const Tile &tile) { return tile.y * boardWidth + tile.x; }
 
 // Using this in place of contains because I was dumb and used raw pointers everywhere, and both are O(n) efficiency
 // Might consider making the vector of player pieces an unordered set to make efficiency O(log n) instead of O(n)
@@ -281,7 +279,12 @@ int GameInstance::setupEnemy() {
 }
 
 GameInstance::Status GameInstance::executeMove(const Move &move) {
+    ASSERT(getValidMoves(*move.from, move.type).count(move));
+    ASSERT(move.to);
     Piece * piece = move.from->occupyingPiece;
+    ASSERT(piecePositions.count(move.from->occupyingPiece));
+    ASSERT(pieceExists(piece));
+
     switch (move.type) {
         case MoveType::Move: 
             log("Moving %s at (%d, %d) to (%d, %d)", getPieceType(*piece).c_str(), move.from->x+1, move.from->y+1, move.to->x+1, move.to->y+1);
@@ -308,39 +311,19 @@ GameInstance::Status GameInstance::executeMove(const Move &move) {
     }
 }
 
-/* This is the only function that needs to get called by the UI to execute moves (besides getValidMoves). The rest of the logic should execute independently of the UI. */
-GameInstance::Status GameInstance::makePlayerMove(const Move &move, const std::unordered_set<Move, MoveHash> validMoves) {
-    log("\nMaking player move... \n\n");
-    ASSERT(move.to);
-    Piece * piece = move.from->occupyingPiece;
-    ASSERT(pieceExists(piece));
-    ASSERT(piecePositions.count(move.from->occupyingPiece));
-
-    ASSERT(validMoves.count(move));
-
-    return executeMove(move);
-}
-
 GameInstance::Status GameInstance::takeEnemyTurn() {
     log("\nTaking enemy turn... \n\n");
     // The construction of this data structure will change as I figure out how the algo works
     std::unordered_set<Move, MoveHash> allEnemyMoves;
-    for (const std::unique_ptr<Piece> &piece : enemyPieces) {
-        if (piecePositions.count(piece.get()) && piecePositions.at(piece.get())) {
+    for (const std::unique_ptr<Piece> &piece : enemyPieces)
+        if (piecePositions.count(piece.get()) && piecePositions.at(piece.get()))
             allEnemyMoves.merge(getValidMoves(*piecePositions.at(piece.get()), MoveType::Any));
-        }
-    }
     log("\tList of possible enemy moves generated");
     
     if (allEnemyMoves.empty()) return Status::PlayerWin;
 
     Move move = enemyAlgoBasic(allEnemyMoves, board);
-    log("\tEnemy move selected, making move...");
-
-    ASSERT(move.to);
-    Piece * piece = move.from->occupyingPiece;
-    ASSERT(pieceExists(piece));
-    ASSERT(piecePositions.count(move.from->occupyingPiece));
+    log("\tEnemy move selected, executing move...");
 
     return executeMove(move);
 }
@@ -355,7 +338,8 @@ GameInstance::Status GameInstance::getWinStatus() {
             else
                 return Status::Next;
         default:
-            debug("Error: no valid mission type");
+            log("Error: no valid mission type");
+            ASSERT(mission == MissionType::HoldThePoint);
     }
     return Status::Quit;
 }

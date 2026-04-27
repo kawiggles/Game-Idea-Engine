@@ -19,11 +19,11 @@ std::unordered_map<int, std::unique_ptr<Piece>> RunInstance::getInitialPieces() 
     std::unordered_map<int, std::unique_ptr<Piece>> newInventory;
     switch (leader) {
         case LeaderType::Scout:
-            newInventory[0] = std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, true);
-            newInventory[1] = std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, true);
-            newInventory[2] = std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Archer, true);
-            newInventory[3] = std::make_unique<Piece>(PieceMaterial::Stone, PieceType::LCavalry, true);
-            newInventory[4] = std::make_unique<Piece>(PieceMaterial::Stone, PieceType::LCavalry, true);
+            newInventory[0] = std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, Player::Human);
+            newInventory[1] = std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, Player::Human);
+            newInventory[2] = std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Archer, Player::Human);
+            newInventory[3] = std::make_unique<Piece>(PieceMaterial::Stone, PieceType::LCavalry, Player::Human);
+            newInventory[4] = std::make_unique<Piece>(PieceMaterial::Stone, PieceType::LCavalry, Player::Human);
             break;
         default:
             std::cout << "Error, initial pieces not generated." << std::endl;
