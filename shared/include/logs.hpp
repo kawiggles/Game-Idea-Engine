@@ -15,7 +15,7 @@
 #else
 #define ASSERT(n) \
 	if(!(n)) { \
-    endwin() \
+    endwin(); \
 	printf("%s - Failed\n", #n); \
 	printf("At %s ", __TIME__); \
 	printf("in file %s ", __FILE__); \
