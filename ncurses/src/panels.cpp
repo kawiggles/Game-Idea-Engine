@@ -191,7 +191,8 @@ void BoardPanel::handleInput(int ch, GameInterface &interface) {
                     interface.moveChoice = interface.input.get()->activeOptions[0];
                     validMoves = game->getValidMoves(*choice, interface.moveChoice);
                 }
-            } else { // Move type selected -> perform the move (while updating the game status) and then take the enemy turn
+            } else { // Move type selected -> perform the move (while updating the game status)
+                     // and then take the enemy turn
                 ASSERT(interface.moveChoice != MoveType::Any && interface.moveChoice != MoveType::Null);
                 Tile * toChoice = game->board.at(cursorY * game->boardWidth + cursorX).get();
                 ASSERT(toChoice);
@@ -291,6 +292,21 @@ void InputPanel::handleInput(int ch, GameInterface &interface) {
             break;
         case '\n': case KEY_ENTER:
             interface.moveChoice = activeOptions[selected - 1];
+            if (interface.moveChoice == MoveType::Capture) {
+                log("Executing player capture objective capture at tile (%d, %d)",
+                        interface.tileChoice->x+1, interface.tileChoice->y+1);
+                interface.board->game->status = interface.board->game->executeMove(Move{
+                        interface.moveChoice,
+                        interface.tileChoice,
+                        interface.tileChoice
+                        }); // ugh
+                interface.board->validMoves.clear();
+                interface.moveChoice = MoveType::Null;
+                interface.tileChoice = nullptr;
+                ASSERT(interface.board->game->status == GameInstance::Status::Next);
+                log("Taking enemy turn");
+                interface.board->game->status = interface.board->game->takeEnemyTurn();
+            }
             activeOptions.clear();
             interface.activePanel = interface.board.get();
             interface.board->validMoves = interface.board->game->getValidMoves(*interface.tileChoice, interface.moveChoice);

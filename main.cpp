@@ -126,6 +126,8 @@ int main() {
     testInterface.run();
 
     endwin();
+    
+    printf("Game Over: %s", (testGame.status == GameInstance::Status::PlayerWin) ? "Player Wins" : "Enemy Wins");
 
     closeLogger();
     return 0;
