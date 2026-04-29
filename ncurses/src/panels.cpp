@@ -189,6 +189,7 @@ void BoardPanel::handleInput(int ch, GameInterface &interface) {
                     interface.activePanel = interface.input.get();
                 else {
                     interface.moveChoice = interface.input.get()->activeOptions[0];
+                    interface.input.get()->activeOptions.clear();
                     validMoves = game->getValidMoves(*choice, interface.moveChoice);
                 }
             } else { // Move type selected -> perform the move (while updating the game status)
