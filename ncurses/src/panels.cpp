@@ -296,20 +296,21 @@ void InputPanel::handleInput(int ch, GameInterface &interface) {
                 log("Executing player capture objective capture at tile (%d, %d)",
                         interface.tileChoice->x+1, interface.tileChoice->y+1);
                 interface.board->game->status = interface.board->game->executeMove(Move{
-                        interface.moveChoice,
+                        MoveType::Capture,
                         interface.tileChoice,
                         interface.tileChoice
-                        }); // ugh
+                        }); 
                 interface.board->validMoves.clear();
                 interface.moveChoice = MoveType::Null;
                 interface.tileChoice = nullptr;
-                ASSERT(interface.board->game->status == GameInstance::Status::Next);
+                ASSERT(interface.board->game->status == GameInstance::Status::PlayerWin);
                 log("Taking enemy turn");
                 interface.board->game->status = interface.board->game->takeEnemyTurn();
+            } else {
+                interface.activePanel = interface.board.get();
+                interface.board->validMoves = interface.board->game->getValidMoves(*interface.tileChoice, interface.moveChoice);
             }
             activeOptions.clear();
-            interface.activePanel = interface.board.get();
-            interface.board->validMoves = interface.board->game->getValidMoves(*interface.tileChoice, interface.moveChoice);
             break;
     }
 }
