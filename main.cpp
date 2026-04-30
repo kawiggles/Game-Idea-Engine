@@ -80,7 +80,7 @@ int main() {
     // Create arrays of test of pieces
     std::vector<std::unique_ptr<Piece>> testPlayerPieces;
     testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, Player::Human));
-    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, Player::Human));
+    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Catapult, Player::Human));
     testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Elite, Player::Human));
     testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Stone, PieceType::LCavalry, Player::Human));
     testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Stone, PieceType::LCavalry, Player::Human));
@@ -88,10 +88,10 @@ int main() {
     
     std::vector<std::unique_ptr<Piece>> testEnemyPieces;
     testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, Player::CPU));
-    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Shield, Player::CPU));
-    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Elite, Player::CPU));
     testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, Player::CPU));
-    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Shield, Player::CPU));
+    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Archer, Player::CPU));
+    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, Player::CPU));
+    testEnemyPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Archer, Player::CPU));
     log("Enemy pieces created...");
     
     log("Defining game instance attributes...");
@@ -127,7 +127,19 @@ int main() {
 
     endwin();
     
-    printf("Game Over: %s", (testGame.status == GameInstance::Status::PlayerWin) ? "Player Wins" : "Enemy Wins");
+    switch (testGame.status) {
+        case GameInstance::Status::PlayerWin:
+            printf("Player wins!");
+            break;
+        case GameInstance::Status::EnemyWin:
+            printf("Enemy wins");
+            break;
+        case GameInstance::Status::Quit:
+            printf("Quitting...");
+            break;
+        default:
+            printf("Something has gone wrong Kawika, fix it");
+    }
 
     closeLogger();
     return 0;

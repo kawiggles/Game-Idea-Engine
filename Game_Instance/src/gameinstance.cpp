@@ -292,18 +292,21 @@ GameInstance::Status GameInstance::executeMove(const Move &move) {
             move.from->occupyingPiece = nullptr;
             move.to->occupyingPiece = piece;
             piecePositions[piece] = move.to;
+            turnCount++;
             return getWinStatus();
         case MoveType::Shoot:
             ASSERT(pieceExists(move.to->occupyingPiece));
             log("Piece %s at (%d, %d) shooting piece at (%d, %d)", getPieceType(*piece).c_str(), move.from->x+1, move.from->y+1, move.to->x+1, move.to->y+1);
             piecePositions.at(move.to->occupyingPiece) = nullptr;
             move.to->occupyingPiece = nullptr;
+            turnCount++;
             return getWinStatus();
         case MoveType::Capture: {
             log("Piece %s attempting to capture objective at (%d, %d)", getPieceType(*piece).c_str(), move.from->x+1, move.from->y+1);
             ASSERT(move.from->terrain == TerrainType::Objective);
             Objective * obj = dynamic_cast<Objective *>(move.from);
             obj->isCapturedBy = Player::Human;
+            turnCount++;
             return getWinStatus();
         }
         default:

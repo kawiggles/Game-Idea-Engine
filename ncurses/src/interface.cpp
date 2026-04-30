@@ -24,6 +24,8 @@ GameInterface::GameInterface(GameInstance * game) {
 void GameInterface::initColors() {
     start_color();
     can_change_color();
+    init_pair(99, COLOR_WHITE, COLOR_BLACK);
+    wbkgd(stdscr, COLOR_PAIR(1));
     // Terrain Colors
     init_color(8, 0, 500, 0); // Light Green for forest
     init_color(9, 500, 500, 0); // Light Yellow for fields

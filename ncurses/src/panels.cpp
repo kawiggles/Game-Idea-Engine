@@ -185,15 +185,21 @@ void BoardPanel::handleInput(int ch, GameInterface &interface) {
                     interface.input.get()->activeOptions.push_back(MoveType::Shoot);
                 if (interface.tileChoice->terrain == TerrainType::Objective) 
                     interface.input.get()->activeOptions.push_back(MoveType::Capture);
-                if(interface.input.get()->activeOptions.size() > 1)
+
+                if(interface.input.get()->activeOptions.size() > 1) {
                     interface.activePanel = interface.input.get();
-                else {
+                } else if (interface.input.get()->activeOptions.size() == 1) {
                     interface.moveChoice = interface.input.get()->activeOptions[0];
                     interface.input.get()->activeOptions.clear();
                     validMoves = game->getValidMoves(*choice, interface.moveChoice);
+                } else {
+                    game->status = GameInstance::Status::Redo;
+                    interface.moveChoice = MoveType::Null;
+                    interface.input.get()->activeOptions.clear();
+                    validMoves.clear();
+                    interface.tileChoice = nullptr;
                 }
-            } else { // Move type selected -> perform the move (while updating the game status)
-                     // and then take the enemy turn
+            } else { // Move type selected -> perform the move and then take the enemy turn
                 ASSERT(interface.moveChoice != MoveType::Any && interface.moveChoice != MoveType::Null);
                 Tile * toChoice = game->board.at(cursorY * game->boardWidth + cursorX).get();
                 ASSERT(toChoice);
