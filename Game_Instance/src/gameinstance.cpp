@@ -336,15 +336,20 @@ GameInstance::Status GameInstance::takeEnemyTurn() {
 GameInstance::Status GameInstance::getWinStatus() {
     switch (mission) {
         case MissionType::HoldThePoint:
-            if (objectives[0]->isCapturedBy == Player::Human) 
+            if (objectives[0]->isCapturedBy == Player::Human) {
+                log("getWinStatus is Player Win");
                 return Status::PlayerWin;
-            else if (objectives[0]->isCapturedBy == Player::CPU)
+            } else if (objectives[0]->isCapturedBy == Player::CPU) {
+                log("getWinStatus is Enemy Win");
                 return Status::EnemyWin;
-            else
+            } else {
+                log("getWinStatus is Next");
                 return Status::Next;
+            }
         default:
             log("Error: no valid mission type");
             ASSERT(mission == MissionType::HoldThePoint);
     }
+    log("getWinStatus is Quit");
     return Status::Quit;
 }

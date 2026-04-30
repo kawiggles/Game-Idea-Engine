@@ -212,9 +212,8 @@ void BoardPanel::handleInput(int ch, GameInterface &interface) {
                 validMoves.clear();
                 interface.moveChoice = MoveType::Null;
                 interface.tileChoice = nullptr;
-                ASSERT(game->status == GameInstance::Status::Next);
-                log("Taking enemy turn");
-                game->status = game->takeEnemyTurn();
+                if (game->status == GameInstance::Status::Next)
+                    game->status = game->takeEnemyTurn();
             }
             break;
         }
@@ -312,7 +311,7 @@ void InputPanel::setupDraw(const GameInterface &interface, Piece * piece) {
 
     std::string prompt = "Placing piece " + std::to_string(interface.setupIterator + 1) + " of " + std::to_string(interface.board->game->playerPieces.size()) + ":";
     auto xPos = [&, prompt]() {
-        return (getmaxx(window) - prompt.length() + 1) / 2;
+        return (getmaxx(window) - prompt.length()) / 2;
     };
 
     mvwprintw(window, 1, xPos(), "%s", prompt.c_str());

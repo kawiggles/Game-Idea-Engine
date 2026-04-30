@@ -120,12 +120,15 @@ int main() {
     GameInstance testGame(gameSeed, randomBiome, MissionType::HoldThePoint, randomOctave, roadBool);
     testGame.makeGame(std::move(testPlayerPieces), std::move(testEnemyPieces));
     
+    {
     GameInterface testInterface(&testGame);
     testInterface.initColors();
     testInterface.setup();
     testInterface.run();
+    }
 
     endwin();
+
     
     switch (testGame.status) {
         case GameInstance::Status::PlayerWin:
@@ -141,6 +144,7 @@ int main() {
             printf("Something has gone wrong Kawika, fix it");
     }
 
+    fflush(stdout);
     closeLogger();
     return 0;
 }
