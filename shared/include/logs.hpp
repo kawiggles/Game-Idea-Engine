@@ -20,6 +20,7 @@
 	printf("At %s ", __TIME__); \
 	printf("in file %s ", __FILE__); \
 	printf("at line %d\n", __LINE__); \
+    log("\nERROR ENCOUNTERED"); \
     closeLogger(); \
 	exit(1); }
 #endif
