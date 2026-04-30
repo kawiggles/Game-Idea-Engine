@@ -61,3 +61,14 @@ std::string getMoveType(const MoveType move) {
         default:                return  "Null";
     }
 }
+
+std::string getMaterialType(const PieceMaterial material) {
+    switch (material) {
+        case PieceMaterial::Wood:   return "Wood";
+        case PieceMaterial::Stone:  return "Stone";
+        case PieceMaterial::Iron:   return "Iron";
+        case PieceMaterial::Gold:   return "Gold";
+        case PieceMaterial::Diamond: return "Diamond";
+        default:                    return "Null";
+    }
+}

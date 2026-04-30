@@ -244,6 +244,8 @@ void InfoPanel::draw(const GameInterface &interface) {
         wprintw(window, "%s", (piece.owner == Player::Human) ? "Player" : "Enemy");
         mvwprintw(window, 5, w/2, "|\tType: ");
         wprintw(window, "%s", getPieceType(piece).c_str());
+        mvwprintw(window, 6, w/2, "|\tMaterial: ");
+        wprintw(window, "%s", getMaterialType(piece.material).c_str());
     } 
     
     wrefresh(window);

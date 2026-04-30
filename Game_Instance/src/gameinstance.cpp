@@ -252,7 +252,7 @@ std::unordered_set<Move, MoveHash> GameInstance::getValidMoves(Tile &tile, MoveT
 }
 
 int GameInstance::addPiece(Piece * piece, int tileIndex) {
-    log("Attempting to add %s at tile index %d", getPieceType(*piece).c_str(), tileIndex);
+    log("Attempting to add %s at tile (%d, %d)", getPieceType(*piece).c_str(), board.at(tileIndex)->x+1, board.at(tileIndex)->y+1);
     ASSERT(tileIndex < board.size());
     ASSERT(pieceExists(piece));
 
@@ -296,13 +296,15 @@ GameInstance::Status GameInstance::executeMove(const Move &move) {
             return getWinStatus();
         case MoveType::Shoot:
             ASSERT(pieceExists(move.to->occupyingPiece));
-            log("Piece %s at (%d, %d) shooting piece at (%d, %d)", getPieceType(*piece).c_str(), move.from->x+1, move.from->y+1, move.to->x+1, move.to->y+1);
+            log("Piece %s at (%d, %d) shooting piece at (%d, %d)",
+                    getPieceType(*piece).c_str(), move.from->x+1, move.from->y+1, move.to->x+1, move.to->y+1);
             piecePositions.at(move.to->occupyingPiece) = nullptr;
             move.to->occupyingPiece = nullptr;
             turnCount++;
             return getWinStatus();
         case MoveType::Capture: {
-            log("Piece %s attempting to capture objective at (%d, %d)", getPieceType(*piece).c_str(), move.from->x+1, move.from->y+1);
+            log("Piece %s attempting to capture objective at (%d, %d)",
+                    getPieceType(*piece).c_str(), move.from->x+1, move.from->y+1);
             ASSERT(move.from->terrain == TerrainType::Objective);
             Objective * obj = dynamic_cast<Objective *>(move.from);
             obj->isCapturedBy = Player::Human;

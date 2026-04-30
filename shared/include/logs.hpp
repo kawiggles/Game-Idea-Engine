@@ -61,3 +61,4 @@ std::string getPieceStats(const Piece &piece);
 std::string getBiomeType(const BiomeType biome);
 std::string getTerrainType(const TerrainType terrain);
 std::string getMoveType(const MoveType move);
+std::string getMaterialType(const PieceMaterial material);

@@ -25,6 +25,7 @@ Move enemyAlgoBasic(std::unordered_set<Move, MoveHash> possibleMoves, const std:
         }
     }
     
-    log("Best move found");
+    log("Best move found: Movetype %s from (%d, %d) to (%d, %d)", getMoveType(bestMove.type).c_str(),
+            bestMove.from->x+1, bestMove.from->y+1, bestMove.to->x+1, bestMove.to->y+1);
     return bestMove;
 }

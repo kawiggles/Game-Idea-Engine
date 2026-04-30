@@ -82,7 +82,7 @@ int main() {
     testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Light, Player::Human));
     testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Catapult, Player::Human));
     testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Wood, PieceType::Elite, Player::Human));
-    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Stone, PieceType::LCavalry, Player::Human));
+    testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Stone, PieceType::HCavalry, Player::Human));
     testPlayerPieces.push_back(std::make_unique<Piece>(PieceMaterial::Stone, PieceType::LCavalry, Player::Human));
     log("Player pieces created...");
     

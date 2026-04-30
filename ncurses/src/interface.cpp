@@ -11,7 +11,7 @@ GameInterface::GameInterface(GameInstance * game) {
     board->game = game;
     board->cursorX = 0;
     board->cursorY = game->boardHeight - 1;
-    info = std::make_unique<InfoPanel>(7, COLS / 4 * 3, ((LINES - bH) / 3) + bH, (COLS - bW) / 4);
+    info = std::make_unique<InfoPanel>(8, COLS / 4 * 3, ((LINES - bH) / 3) + bH, (COLS - bW) / 4);
     input = std::make_unique<InputPanel>(LINES / 4, COLS, LINES * 3 / 4, 0);
 
     activePanel = board.get();
