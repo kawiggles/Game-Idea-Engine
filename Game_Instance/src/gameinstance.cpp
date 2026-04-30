@@ -307,7 +307,7 @@ GameInstance::Status GameInstance::executeMove(const Move &move) {
                     getPieceType(*piece).c_str(), move.from->x+1, move.from->y+1);
             ASSERT(move.from->terrain == TerrainType::Objective);
             Objective * obj = dynamic_cast<Objective *>(move.from);
-            obj->isCapturedBy = Player::Human;
+            obj->isCapturedBy = piece->owner;
             turnCount++;
             return getWinStatus();
         }

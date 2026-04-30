@@ -35,7 +35,7 @@ inline void initLogger() {
         return;
     }
     time_t currentTime = time(nullptr);
-    fprintf(LOG_FILE, "=== Session Log Starting At: %s ===\n", ctime(&currentTime));
+    fprintf(LOG_FILE, "=== Session Log Starting At: %.24s ===\n", ctime(&currentTime));
     fflush(LOG_FILE);
 }
 

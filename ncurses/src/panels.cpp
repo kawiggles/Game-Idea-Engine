@@ -84,13 +84,9 @@ BoardPanel::Symbol BoardPanel::getSymbol(const Tile &tile, bool v) {
 
 void BoardPanel::draw(const GameInterface &interface) {
     log("Drawing board panel");
-    // TODO: find a better way to check if a tile is valid than this
-    auto tileInMoves = [this] (Tile * tile) {
-        for (Move m : validMoves)
-            if (m.to == tile)
-                return true;
-        return false;
-    };
+    std::unordered_set<Tile *> validToTiles;
+    for (Move m : validMoves)
+        validToTiles.insert(m.to);
 
     wclear(window);
     box(window, 0, 0);
@@ -117,7 +113,7 @@ void BoardPanel::draw(const GameInterface &interface) {
 
         for (int j = 0; j < w; j++) {
             Tile * tile = game->board.at(tileIndex).get();
-            Symbol symbol = getSymbol(*tile, !validMoves.empty() && tileInMoves(tile));
+            Symbol symbol = getSymbol(*tile, !validMoves.empty() && validToTiles.count(tile));
             if (tileIndex == cursorPos)
                 wattron(window, A_REVERSE);
 
@@ -278,7 +274,7 @@ void InputPanel::draw(const GameInterface &interface) {
     box(window, 0, 0);
 
     std::string prompt;
-    auto xPos = [&, prompt]() {
+    auto xPos = [&]() {
         return (getmaxx(window) - prompt.length()) / 2;
     };
 
@@ -310,7 +306,7 @@ void InputPanel::setupDraw(const GameInterface &interface, Piece * piece) {
     box(window, 0, 0);
 
     std::string prompt = "Placing piece " + std::to_string(interface.setupIterator + 1) + " of " + std::to_string(interface.board->game->playerPieces.size()) + ":";
-    auto xPos = [&, prompt]() {
+    auto xPos = [&]() {
         return (getmaxx(window) - prompt.length()) / 2;
     };
 
@@ -359,12 +355,7 @@ void InputPanel::handleInput(int ch, GameInterface &interface) {
                         interface.tileChoice,
                         interface.tileChoice
                         }); 
-                interface.board->validMoves.clear();
-                interface.moveChoice = MoveType::Null;
-                interface.tileChoice = nullptr;
                 ASSERT(interface.board->game->status == GameInstance::Status::PlayerWin);
-                log("Taking enemy turn");
-                interface.board->game->status = interface.board->game->takeEnemyTurn();
             } else {
                 interface.activePanel = interface.board.get();
                 interface.board->validMoves = interface.board->game->getValidMoves(*interface.tileChoice, interface.moveChoice);
