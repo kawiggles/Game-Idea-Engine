@@ -160,7 +160,7 @@ void BoardPanel::draw(const GameInterface &interface) {
 
 void BoardPanel::handleInput(int ch, GameInterface &interface) {
     ASSERT(interface.activePanel == this);
-    log("Running handleInput with BoardPanel");
+    log("Running handleInput with BoardPanel, input is: %c", static_cast<char>(ch));
     switch(ch) {
         case 119: case KEY_UP:
             if (cursorY < game->boardHeight - 1) cursorY++; break;
@@ -221,6 +221,26 @@ void BoardPanel::handleInput(int ch, GameInterface &interface) {
     }
 }
 
+void BoardPanel::handleSetup(int ch, GameInterface &interface, Piece * piece) {
+    log("Running handleSetup with input %c", static_cast<char>(ch));
+    
+    switch (ch) {
+        case KEY_UP: case 119:
+            if (cursorY < game->boardHeight - 1) cursorY++; break;
+        case KEY_DOWN: case 115:
+            if (cursorY > 0) cursorY--; break;
+        case KEY_LEFT: case 97:
+            if (cursorX > 0) cursorX--; break;
+        case KEY_RIGHT: case 100:
+            if (cursorX < game->boardWidth - 1) cursorX++; break;
+        case '\n': case KEY_ENTER:
+            if (!game->board.at(cursorY * game->boardWidth + cursorX)->occupyingPiece) {
+                game->addPiece(piece, cursorY * game->boardWidth + cursorX);
+                interface.setupIterator++;
+            }
+    } 
+}
+
 void InfoPanel::draw(const GameInterface &interface) {
     log("Drawing InfoPanel");
     wclear(window);
@@ -230,7 +250,7 @@ void InfoPanel::draw(const GameInterface &interface) {
     Tile * tile = interface.board->game->board.at(
             interface.board->cursorY * interface.board->game->boardWidth + interface.board->cursorX).get();
 
-    mvwprintw(window, 1, 1, interface.setupComplete ? "Turn: %d" : "Setup:", (interface.board->game->turnCount / 2) + 1);
+    mvwprintw(window, 1, 1, (interface.setupIterator == -1) ? "Turn: %d" : "Setup:", (interface.board->game->turnCount / 2) + 1);
     wmove(window, 2, 1);
     for (int i = 0; i < w - 2; i++) wprintw(window, "-");
 
@@ -257,12 +277,15 @@ void InputPanel::draw(const GameInterface &interface) {
     log("Drawing InputPanel");
     wclear(window);
     box(window, 0, 0);
-    int w = getmaxx(window);
+
     std::string prompt;
+    auto xPos = [&, prompt]() {
+        return (getmaxx(window) - prompt.length()) / 2;
+    };
 
     if (interface.activePanel == this) {
         prompt = "Select a move type:";
-        mvwprintw(window, 1, (getmaxx(window) - prompt.length()) / 2, "%s", prompt.c_str());
+        mvwprintw(window, 1, xPos(), "%s", prompt.c_str());
         const Piece piece = *interface.tileChoice->occupyingPiece;
         int s = activeOptions.size();
         ASSERT(s > 0);
@@ -271,22 +294,50 @@ void InputPanel::draw(const GameInterface &interface) {
             mvwprintw(window, (getmaxy(window) / 2) - 1, (getmaxx(window) * i / (s + 1)) + (getmaxx(window) / (s + 1)), "%s", getMoveType(activeOptions[i]).c_str());
             if (selected == i + 1) wattroff(window, A_REVERSE);
         }
-
-    } else if (!interface.setupComplete) {
-        prompt = "Place next piece:";
-        mvwprintw(window, 1, (getmaxx(window) - prompt.length()) / 2, "%s", prompt.c_str());
     } else if (interface.moveChoice == MoveType::Null) {
        prompt = "Select a piece to move:"; 
-       mvwprintw(window, 1, (getmaxx(window) - prompt.length()) / 2, "%s", prompt.c_str());
+       mvwprintw(window, 1, xPos(), "%s", prompt.c_str());
     } else {
         prompt = "Select a destination tile:";
-        mvwprintw(window, 1, (getmaxx(window) - prompt.length()) / 2, "%s", prompt.c_str());
+        mvwprintw(window, 1, xPos(), "%s", prompt.c_str());
     }
 
     wrefresh(window);
 }
 
+void InputPanel::setupDraw(const GameInterface &interface, Piece * piece) {
+    log("Drawing InputPanel for setup, on piece %d", interface.setupIterator);
+    wclear(window);
+    box(window, 0, 0);
+
+    std::string prompt = "Placing piece " + std::to_string(interface.setupIterator + 1) + " of " + std::to_string(interface.board->game->playerPieces.size()) + ":";
+    auto xPos = [&, prompt]() {
+        return (getmaxx(window) - prompt.length() + 1) / 2;
+    };
+
+    mvwprintw(window, 1, xPos(), "%s", prompt.c_str());
+    prompt = "Piece Type: ";
+    prompt += getPieceType(*piece).c_str();
+    mvwprintw(window, 3, xPos(), "%s", prompt.c_str());
+    prompt = "Remaining Pieces:";
+    mvwprintw(window, 5, xPos(), "%s", prompt.c_str());
+    if (interface.setupIterator + 1 == interface.board->game->playerPieces.size()) {
+        prompt = "None";
+    } else {
+        prompt = "";
+        for (int i = interface.setupIterator + 1; i < interface.board->game->playerPieces.size(); i++) {
+            prompt += getPieceType(*interface.board->game->playerPieces.at(i).get()); 
+            prompt += ' ';
+        }
+    }
+    mvwprintw(window, 6, xPos(), "%s", prompt.c_str());
+
+    wrefresh(window);
+
+}
+
 void InputPanel::handleInput(int ch, GameInterface &interface) {
+    log("Running handleInput with InputPanel, input is %c", static_cast<char>(ch));
     ASSERT(interface.activePanel == this);
     switch (ch) {
         case KEY_LEFT: case 97:

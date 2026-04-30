@@ -36,6 +36,7 @@ struct BoardPanel : Panel {
     Symbol getSymbol(const Tile &tile, bool v);
 
     void handleInput(int ch, GameInterface &interface) override;
+    void handleSetup(int ch, GameInterface &interface, Piece * piece);
     void draw(const GameInterface &interface) override;
 };
 
@@ -54,6 +55,7 @@ struct InputPanel : Panel {
 
     void handleInput(int ch, GameInterface &interface) override;
     void draw(const GameInterface &interface) override;
+    void setupDraw(const GameInterface &interface, Piece * piece);
 };
 
 void initColors();

@@ -15,7 +15,6 @@ GameInterface::GameInterface(GameInstance * game) {
     input = std::make_unique<InputPanel>(LINES / 4, COLS, LINES * 3 / 4, 0);
 
     activePanel = board.get();
-    setupComplete = false;
     moveChoice = MoveType::Null;
     tileChoice = nullptr;
     board->validMoves.clear();
@@ -62,35 +61,24 @@ void GameInterface::initColors() {
 void GameInterface::setup() {
     log("Running game setup through user interface");
 
-    for (int i = 0; i < board->game->playerPieces.size();) {
-        renderPanels();
-        int ch = getch();
-        switch (ch) {
-            case KEY_UP: case 119:
-                if (board->cursorY < board->game->boardHeight - 1) board->cursorY++; break;
-            case KEY_DOWN: case 115:
-                if (board->cursorY > 0) board->cursorY--; break;
-            case KEY_LEFT: case 97:
-                if (board->cursorX > 0) board->cursorX--; break;
-            case KEY_RIGHT: case 100:
-                if (board->cursorX < board->game->boardWidth - 1) board->cursorX++; break;
-            case '\n': case KEY_ENTER:
-                if (!board->game->board.at(board->cursorY * board->game->boardWidth + board->cursorX)->occupyingPiece) {
-                    board->game->addPiece(board->game->playerPieces[i].get(),
-                        board->cursorY * board->game->boardWidth + board->cursorX);
-                    i++;
-                }
-                break;
-        }
+    while (setupIterator < board->game->playerPieces.size()) {
+        Piece * next = board->game->playerPieces.at(setupIterator).get();
+        board->draw(*this);
+        info->draw(*this);
+        input->setupDraw(*this, next);
+        board->handleSetup(getch(), *this, next);;
     }
+
     log("Player setup complete");
     board->game->setupEnemy();
-    setupComplete = true;
+    setupIterator = -1;
 }
 
 void GameInterface::run() {
     while (board->game->status == GameInstance::Status::Redo || board->game->status == GameInstance::Status::Next) {
-        renderPanels();
+        board->draw(*this);
+        info->draw(*this);
+        input->draw(*this);
         getInput();
     }
 };
@@ -100,9 +88,3 @@ void GameInterface::getInput() {
     if (ch == 'q') board->game->status = GameInstance::Status::Quit;
     activePanel->handleInput(ch, *this);
 }
-
-void GameInterface::renderPanels() {
-    board->draw(*this);
-    info->draw(*this);
-    input->draw(*this);
-};

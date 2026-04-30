@@ -6,7 +6,7 @@
 
 struct GameInterface {
     GameInterface(GameInstance * game);
-    bool setupComplete;
+    int setupIterator = 0;
 
     Panel * activePanel; 
     MoveType moveChoice;
@@ -20,5 +20,4 @@ struct GameInterface {
     void setup();
     void run();
     void getInput();
-    void renderPanels();
 };
