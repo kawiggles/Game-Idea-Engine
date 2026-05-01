@@ -200,11 +200,15 @@ void BoardPanel::handleInput(int ch, GameInterface &interface) {
                 Tile * toChoice = game->board.at(cursorY * game->boardWidth + cursorX).get();
                 ASSERT(toChoice);
                 log("Executing selected player move at tile (%d, %d)", toChoice->x+1, toChoice->y+1);
-                game->status = game->executeMove(Move{
+                Move move = Move{
                         interface.moveChoice,
                         interface.tileChoice,
                         toChoice
-                        }); // ugh
+                        }; // ugh
+                if (validMoves.count(move))
+                    game->status = game->executeMove(move);
+                else
+                    game->status = GameInstance::Status::Redo;
                 validMoves.clear();
                 interface.moveChoice = MoveType::Null;
                 interface.tileChoice = nullptr;
