@@ -11,7 +11,7 @@ GameInterface::GameInterface(GameInstance * game) {
     board->game = game;
     board->cursorX = 0;
     board->cursorY = game->boardHeight - 1;
-    info = std::make_unique<InfoPanel>(8, COLS / 4 * 3, ((LINES - bH) / 3) + bH, (COLS - bW) / 4);
+    info = std::make_unique<InfoPanel>(8, COLS / 2, ((LINES - bH) / 3) + bH, COLS / 4);
     input = std::make_unique<InputPanel>(LINES / 4, COLS, LINES * 3 / 4, 0);
 
     activePanel = board.get();
@@ -66,7 +66,8 @@ void GameInterface::setup() {
         board->draw(*this);
         info->draw(*this);
         input->setupDraw(*this, next);
-        board->handleSetup(getch(), *this, next);;
+        int ch = getch();
+        board->handleSetup(ch, *this, next);;
     }
 
     log("Player setup complete");

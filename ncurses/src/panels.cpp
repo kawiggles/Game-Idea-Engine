@@ -229,7 +229,8 @@ void BoardPanel::handleSetup(int ch, GameInterface &interface, Piece * piece) {
         case KEY_RIGHT: case 100:
             if (cursorX < game->boardWidth - 1) cursorX++; break;
         case '\n': case KEY_ENTER:
-            if (!game->board.at(cursorY * game->boardWidth + cursorX)->occupyingPiece) {
+            if (game->board.at(cursorY * game->boardWidth + cursorX)->terrain != TerrainType::Water
+                && !game->board.at(cursorY * game->boardWidth + cursorX)->occupyingPiece) {
                 game->addPiece(piece, cursorY * game->boardWidth + cursorX);
                 interface.setupIterator++;
             }
@@ -322,7 +323,7 @@ void InputPanel::setupDraw(const GameInterface &interface, Piece * piece) {
         prompt = "";
         for (int i = interface.setupIterator + 1; i < interface.board->game->playerPieces.size(); i++) {
             prompt += getPieceType(*interface.board->game->playerPieces.at(i).get()); 
-            prompt += ' ';
+            if (i != interface.board->game->playerPieces.size() - 1) prompt += " - ";
         }
     }
     mvwprintw(window, 6, xPos(), "%s", prompt.c_str());
