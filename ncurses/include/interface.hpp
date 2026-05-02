@@ -15,6 +15,12 @@ struct GameInterface {
     std::unique_ptr<BoardPanel> board;
     std::unique_ptr<InfoPanel> info;
     std::unique_ptr<InputPanel> input;
+    struct Symbol {
+        int terrainColor = 0;
+        int pieceColor = 0;
+        char pieceSymbol = ' ';
+    };
+    Symbol getSymbol(const Tile &tile, bool v) const;
 
     void initColors();
     void setup();

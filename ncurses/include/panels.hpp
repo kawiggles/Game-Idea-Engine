@@ -28,12 +28,6 @@ struct BoardPanel : Panel {
     GameInstance * game;
     int cursorX, cursorY;
     std::unordered_set<Move, MoveHash> validMoves;
-    struct Symbol {
-        int terrainColor = 0;
-        int pieceColor = 0;
-        char pieceSymbol = ' ';
-    };
-    Symbol getSymbol(const Tile &tile, bool v);
 
     void handleInput(int ch, GameInterface &interface) override;
     void handleSetup(int ch, GameInterface &interface, Piece * piece);

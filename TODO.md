@@ -1,6 +1,8 @@
 # Bug Fixes
 + The board does not display immediately after hitting enter to generate board in the current main.cpp
++ Restrict player setup location to first rank
 # Features
-+ Get the input panel to display the piece being placed during setup
 + Add some way to cancel moves 
-+ Add some way of checking if a selected move is not valid
++ Add way to display piece statistics 
++ Swap positions of info and input panels
++ Add a better way of indicating enemy prior move

@@ -11,8 +11,8 @@ GameInterface::GameInterface(GameInstance * game) {
     board->game = game;
     board->cursorX = 0;
     board->cursorY = game->boardHeight - 1;
-    info = std::make_unique<InfoPanel>(8, COLS / 2, ((LINES - bH) / 3) + bH, COLS / 4);
-    input = std::make_unique<InputPanel>(LINES / 4, COLS, LINES * 3 / 4, 0);
+    input = std::make_unique<InputPanel>(8, COLS / 2, ((LINES - bH) / 3) + bH, COLS / 4);
+    info = std::make_unique<InfoPanel>(LINES / 4, COLS, LINES * 3 / 4, 0);
 
     activePanel = board.get();
     moveChoice = MoveType::Null;
@@ -56,6 +56,55 @@ void GameInterface::initColors() {
     init_pair(22, COLOR_RED, 0);
     init_pair(23, COLOR_WHITE, 12);
     init_pair(24, COLOR_RED, 12);
+}
+
+GameInterface::Symbol GameInterface::getSymbol(const Tile &tile, bool v) const {
+    Symbol symbol;
+
+    switch (tile.terrain) {
+        case TerrainType::Water:    symbol.terrainColor = v ? 11 : 1; break;
+        case TerrainType::Field:    symbol.terrainColor = v ? 12 : 2; break;
+        case TerrainType::Forest:   symbol.terrainColor = v ? 13 : 3; break;
+        case TerrainType::Mountain: symbol.terrainColor = v ? 14 : 4; break;
+        case TerrainType::Road:     symbol.terrainColor = v ? 15 : 5; break;
+        case TerrainType::Desert:   symbol.terrainColor = v ? 16 : 6; break;
+        case TerrainType::Jungle:   symbol.terrainColor = v ? 17 : 7; break;
+        case TerrainType::Peak:     symbol.terrainColor = v ? 18 : 8; break;
+        // Arctic Tiles TODO: Actually write inverse colors for arctic tiles
+        case TerrainType::IceField: symbol.terrainColor = 31; break;
+        case TerrainType::SnowField:symbol.terrainColor = 32; break;
+        case TerrainType::Tundra:   symbol.terrainColor = 33; break;
+        // Mission Tiles
+        case TerrainType::Objective:symbol.terrainColor = v ? 19 : 9; break;
+    }
+    
+    if (tile.occupyingPiece) {
+        switch (tile.occupyingPiece->type) {
+            case PieceType::Light:     symbol.pieceSymbol = 'P'; break;
+            case PieceType::Shield:    symbol.pieceSymbol = 'S'; break;
+            case PieceType::Elite:     symbol.pieceSymbol = 'E'; break;
+            case PieceType::Archer:    symbol.pieceSymbol = 'A'; break;
+            case PieceType::LCavalry:  symbol.pieceSymbol = 'L'; break;
+            case PieceType::MCavalry:  symbol.pieceSymbol = 'M'; break;
+            case PieceType::HCavalry:  symbol.pieceSymbol = 'H'; break;
+            case PieceType::Catapult:  symbol.pieceSymbol = 'T'; break;
+            case PieceType::Ballista:  symbol.pieceSymbol = 'B'; break;
+            case PieceType::Chariot:   symbol.pieceSymbol = 'C'; break;
+            case PieceType::Commander: symbol.pieceSymbol = 'G'; break;
+            case PieceType::Wizard:    symbol.pieceSymbol = 'W'; break;
+            case PieceType::Assassin:  symbol.pieceSymbol = 'X'; break;
+            case PieceType::Druid:     symbol.pieceSymbol = 'D'; break;
+        }
+
+        if (tile.occupyingPiece->owner == Player::Human)
+            symbol.pieceColor = v ? 23 : 21;
+        else
+            symbol.pieceColor = v ? 24 : 22;
+    } else {
+        symbol.pieceColor = symbol.terrainColor;
+    }
+
+    return symbol;
 }
 
 void GameInterface::setup() {
